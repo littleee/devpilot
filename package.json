@@ -1,0 +1,28 @@
+{
+  "name": "stability-copilot-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cross-host stability copilot platform with SDK, widget, demos, and diagnostic agent.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "node ./node_modules/typescript/bin/tsc -p tsconfig.base.json --noEmit false",
+    "test": "npm run build && node --test packages/sdk-core/test/*.test.js packages/widget/test/*.test.js apps/diagnostic-agent/test/*.test.js",
+    "check": "node ./node_modules/typescript/bin/tsc -p tsconfig.base.json --noEmit"
+  },
+  "dependencies": {
+    "@ag-ui/client": "https://registry.npmjs.org/@ag-ui/client/-/client-0.0.47.tgz",
+    "@ag-ui/core": "https://registry.npmjs.org/@ag-ui/core/-/core-0.0.47.tgz",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "source-map-js": "^1.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.1.1",
+    "@types/react": "^18.2.6",
+    "@types/react-dom": "^18.2.4",
+    "typescript": "^5.1.3"
+  }
+}

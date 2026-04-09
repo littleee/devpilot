@@ -11,9 +11,9 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "node ./node_modules/typescript/bin/tsc -p tsconfig.base.json --noEmit false",
+    "build": "npm run build --workspace devlens",
     "test": "npm run build",
-    "check": "node ./node_modules/typescript/bin/tsc -p tsconfig.base.json --noEmit"
+    "check": "npm run check --workspace devlens"
   },
   "dependencies": {
     "react": "^18.2.0",

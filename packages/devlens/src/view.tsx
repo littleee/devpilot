@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import {
+  createDevLensExportPayload,
+  formatDevLensExportMarkdown,
+  getAnnotationKind,
+} from "./output";
+import {
   loadAnnotations,
   loadFloatingPosition,
   saveAnnotations,
@@ -8,14 +13,153 @@ import {
 } from "./storage";
 import type {
   DevLensAnnotation,
+  DevLensAnnotationStatus,
   DevLensMode,
   DevLensMountOptions,
   DevLensRect,
   DevLensSelection,
 } from "./types";
+import {
+  isClosedDevLensAnnotationStatus,
+  isOpenDevLensAnnotationStatus,
+} from "./types";
 
 const ROOT_ATTR = "data-devlens-root";
 const HOST_ATTR = "data-devlens-host";
+const AREA_MATCH_SELECTOR = [
+  "button",
+  "a",
+  "input",
+  "select",
+  "textarea",
+  "img",
+  "p",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "li",
+  "label",
+  "td",
+  "th",
+  "[role='button']",
+  "[role='link']",
+  "[role='tab']",
+  "[role='checkbox']",
+  "[role='radio']",
+  "[role='option']",
+  "[role='switch']",
+  "[role='combobox']",
+  "[role='cell']",
+  "[role='row']",
+].join(", ");
+const AREA_PREVIEW_SELECTOR = [
+  "button",
+  "a",
+  "input",
+  "select",
+  "textarea",
+  "img",
+  "p",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "li",
+  "label",
+  "td",
+  "th",
+  "div",
+  "span",
+  "section",
+  "article",
+  "aside",
+  "nav",
+  "[role='button']",
+  "[role='link']",
+  "[role='tab']",
+  "[role='checkbox']",
+  "[role='radio']",
+  "[role='option']",
+  "[role='switch']",
+  "[role='combobox']",
+].join(", ");
+const AREA_NESTED_CONTENT_SELECTOR = [
+  "p",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "button",
+  "a",
+  "input",
+  "select",
+  "textarea",
+  "label",
+  "td",
+  "th",
+  "[role='button']",
+  "[role='link']",
+  "[role='tab']",
+  "[role='checkbox']",
+  "[role='radio']",
+  "[role='option']",
+  "[role='switch']",
+  "[role='combobox']",
+].join(", ");
+const AREA_PREVIEW_MEANINGFUL_TAGS = new Set([
+  "button",
+  "a",
+  "input",
+  "select",
+  "textarea",
+  "img",
+  "p",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "li",
+  "label",
+  "td",
+  "th",
+  "section",
+  "article",
+  "aside",
+  "nav",
+]);
+const AREA_INTERACTIVE_ROLES = new Set([
+  "button",
+  "link",
+  "tab",
+  "checkbox",
+  "radio",
+  "option",
+  "switch",
+  "combobox",
+  "cell",
+  "row",
+]);
+const AREA_SEMANTIC_TAGS = new Set([
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "label",
+  "a",
+  "img",
+  "td",
+  "th",
+  "li",
+]);
 
 const styles = `
   :host, * {
@@ -258,23 +402,19 @@ const styles = `
   .dl-area-draft {
     position: fixed;
     border: 2px dashed rgba(34, 197, 94, 0.9);
-    background: rgba(34, 197, 94, 0.06);
-    border-radius: 6px;
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-      0 10px 24px rgba(22, 163, 74, 0.12);
+    background: rgba(34, 197, 94, 0.02);
+    border-radius: 4px;
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.08);
     pointer-events: none;
     animation: dl-highlight-enter 90ms ease-out;
   }
 
   .dl-area-match {
     position: fixed;
-    border: 1.5px solid rgba(34, 197, 94, 0.82);
-    background: rgba(34, 197, 94, 0.1);
-    border-radius: 6px;
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.14),
-      0 6px 18px rgba(34, 197, 94, 0.12);
+    border: 2px solid rgba(34, 197, 94, 0.52);
+    background: rgba(34, 197, 94, 0.05);
+    border-radius: 4px;
+    box-shadow: none;
     pointer-events: none;
     animation: dl-highlight-enter 90ms ease-out;
   }
@@ -283,10 +423,8 @@ const styles = `
     position: fixed;
     border: 2px dashed rgba(34, 197, 94, 0.9);
     border-radius: 4px;
-    background: rgba(34, 197, 94, 0.05);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-      0 10px 24px rgba(22, 163, 74, 0.14);
+    background: rgba(34, 197, 94, 0.02);
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.08);
     pointer-events: none;
     animation: dl-highlight-enter 120ms ease-out;
   }
@@ -304,11 +442,9 @@ const styles = `
   }
 
   .dl-active-focus[data-kind="area"] {
-    border-color: rgba(34, 197, 94, 0.92);
-    background: rgba(34, 197, 94, 0.08);
-    box-shadow:
-      0 0 0 4px rgba(34, 197, 94, 0.16),
-      0 10px 24px rgba(22, 163, 74, 0.18);
+    border: 2px dashed rgba(34, 197, 94, 0.92);
+    background: rgba(34, 197, 94, 0.02);
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.12);
   }
 
   .dl-active-focus-label {
@@ -327,6 +463,13 @@ const styles = `
     box-shadow:
       0 10px 24px rgba(15, 23, 42, 0.24),
       0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  .dl-active-focus-label[data-kind="area"] {
+    background: rgba(21, 128, 61, 0.94);
+    box-shadow:
+      0 10px 24px rgba(21, 128, 61, 0.24),
+      0 0 0 1px rgba(187, 247, 208, 0.18);
   }
 
   .dl-area-draft-size {
@@ -375,6 +518,11 @@ const styles = `
   .dl-marker[data-status="resolved"] {
     background: #10b981;
     box-shadow: 0 8px 20px rgba(16, 185, 129, 0.28);
+  }
+
+  .dl-marker[data-status="acknowledged"] {
+    background: #d97706;
+    box-shadow: 0 8px 20px rgba(217, 119, 6, 0.28);
   }
 
   .dl-marker[data-kind="area"] {
@@ -542,6 +690,7 @@ const styles = `
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
+    white-space: nowrap;
   }
 
   .dl-popup-action[data-kind="ghost"] {
@@ -557,6 +706,11 @@ const styles = `
   .dl-popup-action[data-kind="primary"] {
     background: #2f6fed;
     color: #ffffff;
+  }
+
+  .dl-popup-action:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
   }
 
   .dl-session-panel {
@@ -584,6 +738,13 @@ const styles = `
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
+  .dl-session-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+
   .dl-session-title {
     margin: 0;
     font-size: 15px;
@@ -600,7 +761,7 @@ const styles = `
 
   .dl-summary-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
     padding: 14px 18px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -720,6 +881,11 @@ const styles = `
     box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.22);
   }
 
+  .dl-annotation-card[data-status="resolved"],
+  .dl-annotation-card[data-status="dismissed"] {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
   .dl-annotation-card:hover {
     background: rgba(255, 255, 255, 0.05);
     transform: translateY(-1px);
@@ -750,6 +916,16 @@ const styles = `
   .dl-status-pill[data-status="resolved"] {
     background: rgba(16, 185, 129, 0.18);
     color: #6ee7b7;
+  }
+
+  .dl-status-pill[data-status="acknowledged"] {
+    background: rgba(217, 119, 6, 0.18);
+    color: #fbbf24;
+  }
+
+  .dl-status-pill[data-status="dismissed"] {
+    background: rgba(107, 114, 128, 0.2);
+    color: #d1d5db;
   }
 
   .dl-annotation-time {
@@ -1153,29 +1329,8 @@ function describeElement(element: HTMLElement): { elementName: string; elementPa
   };
 }
 
-function isMeaningfulAreaElement(element: HTMLElement): boolean {
-  const tagName = element.tagName.toLowerCase();
-  const role = element.getAttribute("role");
-  const text = (element.textContent || "").trim().replace(/\s+/g, " ");
-  const interactiveRoles = ["button", "link", "tab", "checkbox", "radio", "option", "cell", "row"];
-
-  if (["button", "input", "select", "textarea", "label", "a", "img", "td", "th", "li"].includes(tagName)) {
-    return true;
-  }
-
-  if (role && interactiveRoles.includes(role)) {
-    return true;
-  }
-
-  if ((tagName === "div" || tagName === "span") && text.length > 0 && text.length <= 80) {
-    const hasNestedMeaningfulChild = Boolean(
-      element.querySelector("button, a, input, select, textarea, label, td, th, li, p, h1, h2, h3, h4, h5, h6"),
-    );
-
-    return !hasNestedMeaningfulChild;
-  }
-
-  return ["p", "h1", "h2", "h3", "h4", "h5", "h6", "section", "article", "aside", "nav"].includes(tagName) && text.length > 0 && text.length <= 120;
+function getNormalizedElementText(element: HTMLElement): string {
+  return (element.textContent || "").trim().replace(/\s+/g, " ");
 }
 
 function containsRect(outer: DevLensRect, inner: DevLensRect): boolean {
@@ -1187,68 +1342,267 @@ function containsRect(outer: DevLensRect, inner: DevLensRect): boolean {
   );
 }
 
-function collectAreaMatches(rect: DevLensRect): Array<{ element: HTMLElement; rect: DevLensRect }> {
+function buildAreaPreviewPoints(rect: DevLensRect): Array<[number, number]> {
+  const left = rect.left;
+  const top = rect.top;
+  const right = rect.left + rect.width;
+  const bottom = rect.top + rect.height;
+  const midX = (left + right) / 2;
+  const midY = (top + bottom) / 2;
+
+  return [
+    [left, top],
+    [right, top],
+    [left, bottom],
+    [right, bottom],
+    [midX, midY],
+    [midX, top],
+    [midX, bottom],
+    [left, midY],
+    [right, midY],
+  ].map(([x, y]) => [
+    Math.max(0, Math.min(window.innerWidth - 1, x)),
+    Math.max(0, Math.min(window.innerHeight - 1, y)),
+  ]);
+}
+
+function isAreaInteractiveLikeElement(element: HTMLElement): boolean {
+  const role = element.getAttribute("role");
+  const tabIndex = element.getAttribute("tabindex");
+  const className = typeof element.className === "string" ? element.className : "";
+
+  return (
+    Boolean(role && AREA_INTERACTIVE_ROLES.has(role)) ||
+    element.onclick !== null ||
+    element.hasAttribute("data-clickable") ||
+    (tabIndex !== null && tabIndex !== "-1") ||
+    /(?:^|[\s:_-])(btn|button|switch|toggle|tab|menu-item|clickable)(?:$|[\s:_-])/i.test(className)
+  );
+}
+
+function hasNestedAreaContent(element: HTMLElement): boolean {
+  return Boolean(element.querySelector(AREA_NESTED_CONTENT_SELECTOR));
+}
+
+function countMeaningfulAreaChildren(element: HTMLElement): number {
+  return Array.from(element.children).filter((child) => {
+    if (!(child instanceof HTMLElement)) {
+      return false;
+    }
+
+    const tagName = child.tagName.toLowerCase();
+    const text = getNormalizedElementText(child);
+    return (
+      AREA_PREVIEW_MEANINGFUL_TAGS.has(tagName) ||
+      Boolean(text) ||
+      Boolean(child.querySelector(AREA_MATCH_SELECTOR)) ||
+      isAreaInteractiveLikeElement(child)
+    );
+  }).length;
+}
+
+function isAreaStructuredContainer(
+  element: HTMLElement,
+  elementRect: DevLensRect,
+  selectionRect: DevLensRect,
+): boolean {
+  const tagName = element.tagName.toLowerCase();
+
+  if (!["div", "section", "article", "aside", "nav", "form"].includes(tagName)) {
+    return false;
+  }
+
+  if (elementRect.width < 120 || elementRect.height < 44) {
+    return false;
+  }
+
+  if (
+    elementRect.width > window.innerWidth * 0.96 ||
+    elementRect.height > window.innerHeight * 0.82
+  ) {
+    return false;
+  }
+
+  if (getRectArea(elementRect) >= getRectArea(selectionRect) * 0.98) {
+    return false;
+  }
+
+  const meaningfulChildren = countMeaningfulAreaChildren(element);
+  const descendantCount = element.querySelectorAll(AREA_MATCH_SELECTOR).length;
+  const hasTableLikeDescendant = Boolean(
+    element.querySelector("table, thead, tbody, tr"),
+  );
+
+  return (
+    meaningfulChildren >= 2 &&
+    (descendantCount >= 2 || hasTableLikeDescendant)
+  );
+}
+
+function shouldIncludeAreaPreviewElement(
+  element: HTMLElement,
+  elementRect: DevLensRect,
+  selectionRect: DevLensRect,
+): boolean {
+  const tagName = element.tagName.toLowerCase();
+  const text = getNormalizedElementText(element);
+  const isInteractive = isAreaInteractiveLikeElement(element);
+
+  if (AREA_PREVIEW_MEANINGFUL_TAGS.has(tagName)) {
+    return true;
+  }
+
+  if (tagName === "div" || tagName === "span") {
+    if ((Boolean(text) || isInteractive) && !hasNestedAreaContent(element)) {
+      return true;
+    }
+
+    return isAreaStructuredContainer(element, elementRect, selectionRect);
+  }
+
+  return isAreaStructuredContainer(element, elementRect, selectionRect);
+}
+
+function shouldIncludeCommittedAreaElement(element: HTMLElement): boolean {
+  const tagName = element.tagName.toLowerCase();
+  const role = element.getAttribute("role");
+  const text = getNormalizedElementText(element);
+
+  if (AREA_SEMANTIC_TAGS.has(tagName) || (role && AREA_INTERACTIVE_ROLES.has(role))) {
+    return true;
+  }
+
+  if (tagName === "div" || tagName === "span") {
+    return (Boolean(text) || isAreaInteractiveLikeElement(element)) && !hasNestedAreaContent(element);
+  }
+
+  return false;
+}
+
+function collectAreaPreviewRects(rect: DevLensRect): DevLensRect[] {
   const left = rect.left;
   const top = rect.top;
   const right = rect.left + rect.width;
   const bottom = rect.top + rect.height;
   const candidateElements = new Set<HTMLElement>();
-  const samplePoints = [
-    [left, top],
-    [right, top],
-    [left, bottom],
-    [right, bottom],
-    [(left + right) / 2, (top + bottom) / 2],
-    [(left + right) / 2, top],
-    [(left + right) / 2, bottom],
-    [left, (top + bottom) / 2],
-    [right, (top + bottom) / 2],
-  ] as const;
+  const samplePoints = buildAreaPreviewPoints(rect);
 
   samplePoints.forEach(([x, y]) => {
     document.elementsFromPoint(x, y).forEach((element) => {
-      if (element instanceof HTMLElement) {
-        candidateElements.add(element);
+      if (!(element instanceof HTMLElement)) {
+        return;
       }
+      candidateElements.add(element);
     });
   });
 
-  document
-    .querySelectorAll<HTMLElement>("button, a, input, select, textarea, img, p, h1, h2, h3, h4, h5, h6, li, label, td, th, div, span, section, article, aside, nav, [role]")
-    .forEach((element) => candidateElements.add(element));
+  document.querySelectorAll<HTMLElement>(AREA_PREVIEW_SELECTOR).forEach((element) => {
+    const elementRect = toRect(element.getBoundingClientRect());
+    const center = getRectCenter(elementRect);
+    const overlapArea = getOverlapArea(rect, elementRect);
+    const overlapRatio = overlapArea / Math.max(1, getRectArea(elementRect));
 
-  const rawMatches = Array.from(candidateElements)
-    .filter((element) => !element.closest(`[${ROOT_ATTR}]`) && !element.closest(`[${HOST_ATTR}]`))
-    .filter((element) => element.tagName.toLowerCase() !== "body")
-    .map((element) => ({ element, rect: toRect(element.getBoundingClientRect()) }))
-    .filter(({ rect: elementRect }) => elementRect.width > 10 && elementRect.height > 10)
-    .filter(({ rect: elementRect }) => !(elementRect.width > window.innerWidth * 0.8 && elementRect.height > window.innerHeight * 0.5))
-    .filter(({ rect: elementRect }) => rectsIntersect(rect, elementRect))
-    .filter(({ element, rect: elementRect }) => {
-      if (!isMeaningfulAreaElement(element)) {
-        return false;
-      }
-
-      const centerInside = isPointInsideRect(getRectCenter(elementRect), rect);
-      const overlapArea = getOverlapArea(rect, elementRect);
-      const overlapRatio = overlapArea / Math.max(1, getRectArea(elementRect));
-
-      return centerInside || overlapRatio >= 0.5;
-    });
-
-  return rawMatches.filter(({ element, rect: elementRect }, index) => {
-    return !rawMatches.some(({ element: otherElement, rect: otherRect }, otherIndex) => {
-      if (index === otherIndex) {
-        return false;
-      }
-
-      return (
-        element !== otherElement &&
-        element.contains(otherElement) &&
-        containsRect(elementRect, otherRect)
-      );
-    });
+    if (isPointInsideRect(center, rect) || overlapRatio > 0.5) {
+      candidateElements.add(element);
+    }
   });
+
+  const allMatching: DevLensRect[] = [];
+
+  candidateElements.forEach((element) => {
+    if (element.closest(`[${ROOT_ATTR}]`) || element.closest(`[${HOST_ATTR}]`)) {
+      return;
+    }
+
+    const elementRect = toRect(element.getBoundingClientRect());
+    if (
+      elementRect.width > window.innerWidth * 0.8 &&
+      elementRect.height > window.innerHeight * 0.5
+    ) {
+      return;
+    }
+    if (elementRect.width < 10 || elementRect.height < 10) {
+      return;
+    }
+    if (!rectsIntersect(rect, elementRect)) {
+      return;
+    }
+    if (!shouldIncludeAreaPreviewElement(element, elementRect, rect)) {
+      return;
+    }
+
+    const dominated = allMatching.some((existingRect) =>
+      containsRect(existingRect, elementRect),
+    );
+
+    if (!dominated) {
+      allMatching.push(elementRect);
+    }
+  });
+
+  return allMatching
+    .sort((a, b) => {
+      if (Math.abs(a.top - b.top) > 8) {
+        return a.top - b.top;
+      }
+
+      if (Math.abs(a.left - b.left) > 8) {
+        return a.left - b.left;
+      }
+
+      return getRectArea(a) - getRectArea(b);
+    });
+}
+
+function collectAreaMatches(
+  rect: DevLensRect,
+): Array<{ element: HTMLElement; rect: DevLensRect }> {
+  const allMatching: Array<{ element: HTMLElement; rect: DevLensRect }> = [];
+  const selector = `${AREA_MATCH_SELECTOR}, div, span`;
+
+  document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
+    if (element.closest(`[${ROOT_ATTR}]`) || element.closest(`[${HOST_ATTR}]`)) {
+      return;
+    }
+
+    const elementRect = toRect(element.getBoundingClientRect());
+    if (
+      elementRect.width > window.innerWidth * 0.8 &&
+      elementRect.height > window.innerHeight * 0.5
+    ) {
+      return;
+    }
+    if (elementRect.width < 10 || elementRect.height < 10) {
+      return;
+    }
+    if (!rectsIntersect(rect, elementRect)) {
+      return;
+    }
+    if (!shouldIncludeCommittedAreaElement(element)) {
+      return;
+    }
+
+    allMatching.push({ element, rect: elementRect });
+  });
+
+  return allMatching
+    .filter(
+      ({ element }) =>
+        !allMatching.some(
+          ({ element: other }) => other !== element && element.contains(other),
+        ),
+    )
+    .sort((a, b) => {
+      if (Math.abs(a.rect.top - b.rect.top) > 8) {
+        return a.rect.top - b.rect.top;
+      }
+
+      if (Math.abs(a.rect.left - b.rect.left) > 8) {
+        return a.rect.left - b.rect.left;
+      }
+
+      return getRectArea(a.rect) - getRectArea(b.rect);
+    });
 }
 
 function getUnionRect(rects: DevLensRect[]): DevLensRect | null {
@@ -1269,7 +1623,19 @@ function getUnionRect(rects: DevLensRect[]): DevLensRect | null {
   };
 }
 
-function describeAreaSelection(rect: DevLensRect): {
+function describeAreaDraftPreview(rect: DevLensRect): {
+  matchRects: DevLensRect[];
+  matchCount: number;
+} {
+  const matchRects = collectAreaPreviewRects(rect);
+
+  return {
+    matchRects,
+    matchCount: matchRects.length,
+  };
+}
+
+function describeCommittedAreaSelection(rect: DevLensRect): {
   rect: DevLensRect;
   elementName: string;
   elementPath: string;
@@ -1326,22 +1692,6 @@ function describeAreaSelection(rect: DevLensRect): {
   };
 }
 
-function getAnnotationKind(annotation: DevLensAnnotation): DevLensSelection["kind"] {
-  if (annotation.kind) {
-    return annotation.kind;
-  }
-
-  if (annotation.selectedText) {
-    return "text";
-  }
-
-  if (annotation.relatedElements?.length) {
-    return "area";
-  }
-
-  return "element";
-}
-
 function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString("zh-CN", {
     hour: "2-digit",
@@ -1352,6 +1702,59 @@ function formatTime(timestamp: number): string {
 
 function createId(): string {
   return `ann_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getAnnotationStatusLabel(status: DevLensAnnotationStatus): string {
+  switch (status) {
+    case "acknowledged":
+      return "处理中";
+    case "resolved":
+      return "已解决";
+    case "dismissed":
+      return "已忽略";
+    default:
+      return "待处理";
+  }
+}
+
+function stopEditableEventPropagation(event: React.SyntheticEvent<HTMLElement>): void {
+  // Keep host-page global shortcuts from stealing keystrokes out of DevLens inputs.
+  event.stopPropagation();
+}
+
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall back to a legacy copy path below.
+    }
+  }
+
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    textarea.remove();
+  }
 }
 
 function getDefaultFloatingPosition() {
@@ -1469,7 +1872,16 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
   const [areaDraftRect, setAreaDraftRect] = useState<DevLensRect | null>(null);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
   const [isTextSelectionPending, setIsTextSelectionPending] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const scrollTick = useScrollTick();
+  const openAnnotations = useMemo(
+    () => annotations.filter((item) => isOpenDevLensAnnotationStatus(item.status)),
+    [annotations],
+  );
+  const closedAnnotations = useMemo(
+    () => annotations.filter((item) => isClosedDevLensAnnotationStatus(item.status)),
+    [annotations],
+  );
   const activeAnnotation = useMemo(
     () => annotations.find((item) => item.id === activeAnnotationId) || null,
     [annotations, activeAnnotationId],
@@ -1522,7 +1934,10 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
       return;
     }
 
-    if (annotations.length === 0) {
+    const preferredAnnotations =
+      openAnnotations.length > 0 ? openAnnotations : annotations;
+
+    if (preferredAnnotations.length === 0) {
       if (activeAnnotationId) {
         setActiveAnnotationId(null);
       }
@@ -1530,17 +1945,30 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
     }
 
     if (!activeAnnotationId || !annotations.some((item) => item.id === activeAnnotationId)) {
-      setActiveAnnotationId(annotations[0].id);
+      setActiveAnnotationId(preferredAnnotations[0].id);
     }
-  }, [activeAnnotationId, annotations, mode]);
+  }, [activeAnnotationId, annotations, mode, openAnnotations]);
 
   useEffect(() => {
     if (!isOpen || mode !== "annotate") {
       setHoverRect(null);
       setAreaDraftRect(null);
       areaSelectionRef.current = null;
+      document.body.style.userSelect = "";
+      document.body.style.webkitUserSelect = "";
+      document.documentElement.style.userSelect = "";
+      document.body.style.cursor = "";
       return undefined;
     }
+
+    const resetAreaInteractionState = () => {
+      areaSelectionRef.current = null;
+      setAreaDraftRect(null);
+      document.body.style.userSelect = "";
+      document.body.style.webkitUserSelect = "";
+      document.documentElement.style.userSelect = "";
+      document.body.style.cursor = "";
+    };
 
     const onMouseDown = (event: MouseEvent) => {
       if (selection) {
@@ -1558,7 +1986,12 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
         currentY: event.clientY,
         dragging: false,
       };
+      event.preventDefault();
+      event.stopPropagation();
       document.body.style.userSelect = "none";
+      document.body.style.webkitUserSelect = "none";
+      document.documentElement.style.userSelect = "none";
+      document.body.style.cursor = "crosshair";
       setHoverRect(null);
       setIsTextSelectionPending(false);
     };
@@ -1583,8 +2016,14 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
         if (nextRect.width > 6 || nextRect.height > 6) {
           areaSelection.dragging = true;
           setAreaDraftRect(nextRect);
-          event.preventDefault();
         }
+        event.preventDefault();
+        event.stopPropagation();
+        setHoverRect(null);
+        return;
+      }
+
+      if (event.shiftKey) {
         setHoverRect(null);
         return;
       }
@@ -1619,18 +2058,17 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
         );
 
         areaSelectionRef.current = null;
-        setAreaDraftRect(null);
-        document.body.style.userSelect = "";
+        resetAreaInteractionState();
 
         if (areaSelection.dragging && finalRect.width >= 20 && finalRect.height >= 20) {
-          const detail = describeAreaSelection(finalRect);
+          const detail = describeCommittedAreaSelection(finalRect);
           setSelection({
             kind: "area",
             elementName: detail.elementName,
             elementPath: detail.elementPath,
             rect: detail.rect,
-            pageX: areaSelection.currentX + window.scrollX,
-            pageY: areaSelection.currentY + window.scrollY,
+            pageX: detail.rect.left + window.scrollX,
+            pageY: detail.rect.top + window.scrollY,
             matchCount: detail.matchCount,
             nearbyText: detail.nearbyText,
             relatedElements: detail.relatedElements,
@@ -1703,6 +2141,11 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
         return;
       }
 
+      if (event.shiftKey) {
+        setHoverRect(null);
+        return;
+      }
+
       const target = event.target;
       if (!(target instanceof HTMLElement)) {
         return;
@@ -1732,17 +2175,29 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
       setActiveAnnotationId(null);
     };
 
+    const preventNativeDrag = (event: Event) => {
+      if (!areaSelectionRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+    };
+
     document.addEventListener("mousedown", onMouseDown, true);
     document.addEventListener("mousemove", onMouseMove, true);
     document.addEventListener("mouseup", onMouseUp, true);
     document.addEventListener("click", onClick, true);
+    document.addEventListener("dragstart", preventNativeDrag, true);
+    document.addEventListener("selectstart", preventNativeDrag, true);
 
     return () => {
-      document.body.style.userSelect = "";
+      resetAreaInteractionState();
       document.removeEventListener("mousedown", onMouseDown, true);
       document.removeEventListener("mousemove", onMouseMove, true);
       document.removeEventListener("mouseup", onMouseUp, true);
       document.removeEventListener("click", onClick, true);
+      document.removeEventListener("dragstart", preventNativeDrag, true);
+      document.removeEventListener("selectstart", preventNativeDrag, true);
     };
   }, [isOpen, isTextSelectionPending, mode, selection]);
 
@@ -1769,6 +2224,20 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
       popupRef.current.focus();
     }
   }, [selection]);
+
+  useEffect(() => {
+    if (copyState === "idle") {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCopyState("idle");
+    }, 1800);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [copyState]);
 
   useEffect(() => {
     const onPointerMove = (event: PointerEvent) => {
@@ -1817,17 +2286,18 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
   }, []);
 
   const summary = useMemo(() => {
-    const pending = annotations.filter((item) => item.status === "pending").length;
-    const resolved = annotations.filter((item) => item.status === "resolved").length;
     return {
-      pending,
-      resolved,
+      open: openAnnotations.length,
+      pending: annotations.filter((item) => item.status === "pending").length,
+      acknowledged: annotations.filter((item) => item.status === "acknowledged").length,
+      resolved: annotations.filter((item) => item.status === "resolved").length,
+      dismissed: annotations.filter((item) => item.status === "dismissed").length,
       total: annotations.length,
     };
-  }, [annotations]);
+  }, [annotations, openAnnotations]);
 
   const areaDraftPreview = useMemo(
-    () => (areaDraftRect ? describeAreaSelection(areaDraftRect) : null),
+    () => (areaDraftRect ? describeAreaDraftPreview(areaDraftRect) : null),
     [areaDraftRect],
   );
 
@@ -1854,10 +2324,44 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
     setActiveAnnotationId(annotation.id);
   };
 
-  const openAnnotationSession = (annotation: DevLensAnnotation) => {
-    setActiveAnnotationId(annotation.id);
-    setMode("session");
+  const openAnnotationEditor = (annotation: DevLensAnnotation) => {
     setIsOpen(true);
+    setMode("annotate");
+    editAnnotation(annotation);
+  };
+
+  const setAnnotationStatus = (
+    annotationId: string,
+    nextStatus: DevLensAnnotationStatus,
+  ) => {
+    setAnnotations((current) =>
+      current.map((item) =>
+        item.id === annotationId
+          ? {
+              ...item,
+              status: nextStatus,
+              updatedAt: Date.now(),
+            }
+          : item,
+      ),
+    );
+    setActiveAnnotationId(annotationId);
+  };
+
+  const handleCopyAnnotations = async () => {
+    const payload = createDevLensExportPayload({
+      annotations: openAnnotations,
+      pathname,
+      title: document.title || "Untitled Page",
+      url: window.location.href,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      },
+    });
+    const text = formatDevLensExportMarkdown(payload);
+    const didCopy = await copyTextToClipboard(text);
+    setCopyState(didCopy ? "copied" : "failed");
   };
 
   const handleSave = () => {
@@ -2053,6 +2557,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
           />
           <div
             className="dl-active-focus-label"
+            data-kind={getAnnotationKind(activeFocusAnnotation)}
             style={{
               left: Math.max(12, activeFocusAnnotation.rect.left),
               top: Math.max(12, activeFocusAnnotation.rect.top - 32),
@@ -2065,7 +2570,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
         </>
       ) : null}
 
-      {annotations.map((annotation, index) => (
+      {openAnnotations.map((annotation, index) => (
         <button
           key={annotation.id}
           className="dl-marker"
@@ -2073,7 +2578,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
           data-status={annotation.status}
           data-active={annotation.id === activeAnnotationId && mode === "session"}
           style={markerStyle(annotation)}
-          onClick={() => openAnnotationSession(annotation)}
+          onClick={() => openAnnotationEditor(annotation)}
           title={annotation.comment}
         >
           {getAnnotationKind(annotation) === "area" ? (
@@ -2149,7 +2654,12 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
             placeholder={selection.kind === "area" ? "描述这个区域或多个组件需要修改什么" : "描述这个页面元素需要修改什么"}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
+            onBeforeInput={stopEditableEventPropagation}
+            onCompositionStart={stopEditableEventPropagation}
+            onCompositionUpdate={stopEditableEventPropagation}
+            onCompositionEnd={stopEditableEventPropagation}
             onKeyDown={(event) => {
+              event.stopPropagation();
               if (event.key === "Escape") {
                 setSelection(null);
                 setEditingId(null);
@@ -2160,6 +2670,8 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
                 handleSave();
               }
             }}
+            onKeyUp={stopEditableEventPropagation}
+            onPaste={stopEditableEventPropagation}
           />
           <div className="dl-popup-actions">
             <div className="dl-popup-actions-left">
@@ -2197,47 +2709,67 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
                 这里先只展示 annotation，会话、稳定性和 MCP 同步后续再逐步接进来。
               </p>
             </div>
-            <button className="dl-toolbar-icon-button" data-kind="secondary" onClick={() => setMode("annotate")} title="关闭会话面板">
-              <CollapseIcon />
-            </button>
+            <div className="dl-session-header-actions">
+              <button
+                className="dl-popup-action"
+                data-kind={copyState === "failed" ? "danger" : copyState === "copied" ? "primary" : "ghost"}
+                disabled={openAnnotations.length === 0}
+                onClick={() => {
+                  void handleCopyAnnotations();
+                }}
+                title="复制本页仍需处理的标注信息"
+              >
+                {copyState === "copied" ? "已复制当前标注" : copyState === "failed" ? "复制失败" : "复制当前标注"}
+              </button>
+              <button className="dl-toolbar-icon-button" data-kind="secondary" onClick={() => setMode("annotate")} title="关闭会话面板">
+                <CollapseIcon />
+              </button>
+            </div>
           </div>
           <div className="dl-summary-grid">
             <div className="dl-summary-card">
-              <span className="dl-summary-label">待处理</span>
-              <span className="dl-summary-value">{summary.pending}</span>
+              <span className="dl-summary-label">未完成</span>
+              <span className="dl-summary-value">{summary.open}</span>
+            </div>
+            <div className="dl-summary-card">
+              <span className="dl-summary-label">处理中</span>
+              <span className="dl-summary-value">{summary.acknowledged}</span>
             </div>
             <div className="dl-summary-card">
               <span className="dl-summary-label">已解决</span>
               <span className="dl-summary-value">{summary.resolved}</span>
             </div>
             <div className="dl-summary-card">
-              <span className="dl-summary-label">全部标注</span>
-              <span className="dl-summary-value">{summary.total}</span>
+              <span className="dl-summary-label">已忽略</span>
+              <span className="dl-summary-value">{summary.dismissed}</span>
             </div>
           </div>
           <div className="dl-session-body">
             <div className="dl-session-section">
               <div className="dl-session-section-header">
-                <h4 className="dl-session-section-title">本页标注</h4>
-                <span className="dl-session-section-count">{annotations.length}</span>
+                <h4 className="dl-session-section-title">当前待处理</h4>
+                <span className="dl-session-section-count">{openAnnotations.length}</span>
               </div>
               <div className="dl-session-list">
-                {annotations.length === 0 ? (
+                {openAnnotations.length === 0 ? (
                   <div className="dl-session-empty">
-                    还没有本页标注。进入“标注模式”后点击页面元素，即可就地创建 annotation。
+                    {annotations.length === 0
+                      ? "还没有本页标注。进入“标注模式”后点击页面元素，即可就地创建 annotation。"
+                      : "当前没有未完成标注。已解决和已忽略的项目会保留在下面的历史区。"}
                   </div>
                 ) : (
-                  annotations.map((annotation) => (
+                  openAnnotations.map((annotation) => (
                     <article
                       key={annotation.id}
                       className="dl-annotation-card"
+                      data-status={annotation.status}
                       data-selected={annotation.id === activeAnnotationId}
                       onClick={() => setActiveAnnotationId(annotation.id)}
                     >
                       <div className="dl-annotation-main">
                         <div className="dl-annotation-top">
                           <span className="dl-status-pill" data-status={annotation.status}>
-                            {annotation.status === "resolved" ? "已解决" : "待处理"}
+                            {getAnnotationStatusLabel(annotation.status)}
                           </span>
                         </div>
                         <div className="dl-annotation-comment">{annotation.comment}</div>
@@ -2256,6 +2788,44 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
                 )}
               </div>
             </div>
+
+            {closedAnnotations.length > 0 ? (
+              <div className="dl-session-section">
+                <div className="dl-session-section-header">
+                  <h4 className="dl-session-section-title">已完成历史</h4>
+                  <span className="dl-session-section-count">{closedAnnotations.length}</span>
+                </div>
+                <div className="dl-session-list">
+                  {closedAnnotations.map((annotation) => (
+                    <article
+                      key={annotation.id}
+                      className="dl-annotation-card"
+                      data-status={annotation.status}
+                      data-selected={annotation.id === activeAnnotationId}
+                      onClick={() => setActiveAnnotationId(annotation.id)}
+                    >
+                      <div className="dl-annotation-main">
+                        <div className="dl-annotation-top">
+                          <span className="dl-status-pill" data-status={annotation.status}>
+                            {getAnnotationStatusLabel(annotation.status)}
+                          </span>
+                        </div>
+                        <div className="dl-annotation-comment">{annotation.comment}</div>
+                        <div className="dl-annotation-meta">
+                          {annotation.elementName}
+                          <br />
+                          {annotation.elementPath}
+                        </div>
+                      </div>
+                      <div className="dl-annotation-side">
+                        <span className="dl-annotation-time">{formatTime(annotation.updatedAt)}</span>
+                        <span className="dl-annotation-chevron">›</span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className="dl-session-section">
               <div className="dl-session-section-header">
@@ -2282,7 +2852,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
                       </div>
                       <div className="dl-detail-kv">
                         <strong>状态</strong>
-                        <span>{activeAnnotation.status === "resolved" ? "已解决" : "待处理"}</span>
+                        <span>{getAnnotationStatusLabel(activeAnnotation.status)}</span>
                       </div>
                       <div className="dl-detail-kv" style={{ gridColumn: "1 / -1" }}>
                         <strong>元素路径</strong>
@@ -2337,29 +2907,54 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
                       <button
                         className="dl-popup-action"
                         data-kind="primary"
-                        onClick={() => editAnnotation(activeAnnotation)}
+                        onClick={() => openAnnotationEditor(activeAnnotation)}
                       >
                         编辑标注
                       </button>
-                      <button
-                        className="dl-popup-action"
-                        data-kind="ghost"
-                        onClick={() => {
-                          setAnnotations((current) =>
-                            current.map((item) =>
-                              item.id === activeAnnotation.id
-                                ? {
-                                    ...item,
-                                    status: item.status === "resolved" ? "pending" : "resolved",
-                                    updatedAt: Date.now(),
-                                  }
-                                : item,
-                            ),
-                          );
-                        }}
-                      >
-                        {activeAnnotation.status === "resolved" ? "重新打开" : "标记已解决"}
-                      </button>
+                      {activeAnnotation.status === "pending" ? (
+                        <button
+                          className="dl-popup-action"
+                          data-kind="ghost"
+                          onClick={() => setAnnotationStatus(activeAnnotation.id, "acknowledged")}
+                        >
+                          标记处理中
+                        </button>
+                      ) : null}
+                      {activeAnnotation.status === "acknowledged" ? (
+                        <button
+                          className="dl-popup-action"
+                          data-kind="ghost"
+                          onClick={() => setAnnotationStatus(activeAnnotation.id, "pending")}
+                        >
+                          重新设为待处理
+                        </button>
+                      ) : null}
+                      {isClosedDevLensAnnotationStatus(activeAnnotation.status) ? (
+                        <button
+                          className="dl-popup-action"
+                          data-kind="ghost"
+                          onClick={() => setAnnotationStatus(activeAnnotation.id, "pending")}
+                        >
+                          重新打开
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            className="dl-popup-action"
+                            data-kind="primary"
+                            onClick={() => setAnnotationStatus(activeAnnotation.id, "resolved")}
+                          >
+                            标记已解决
+                          </button>
+                          <button
+                            className="dl-popup-action"
+                            data-kind="danger"
+                            onClick={() => setAnnotationStatus(activeAnnotation.id, "dismissed")}
+                          >
+                            忽略此项
+                          </button>
+                        </>
+                      )}
                       <button
                         className="dl-popup-action"
                         data-kind="danger"
@@ -2412,7 +3007,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
           >
             <AnnotateIcon />
             <span className="dl-toolbar-label">标注</span>
-            {summary.pending > 0 ? <span className="dl-toolbar-count">{summary.pending}</span> : null}
+            {summary.open > 0 ? <span className="dl-toolbar-count">{summary.open}</span> : null}
           </button>
           <button
             className="dl-toolbar-button"
@@ -2458,7 +3053,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
           title="打开 DevLens"
         >
           <DevLensGlyph />
-          {summary.pending > 0 ? <span className="dl-launcher-badge">{summary.pending}</span> : null}
+          {summary.open > 0 ? <span className="dl-launcher-badge">{summary.open}</span> : null}
         </button>
       )}
 

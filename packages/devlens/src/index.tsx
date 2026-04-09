@@ -50,9 +50,21 @@ export function DevLens(props: DevLensMountOptions): null {
   useEffect(() => {
     const controller = mountDevLens(props);
     return () => controller.destroy();
-  }, [props.appId, props.appName, props.defaultOpen, props.endpoint]);
+  }, [props.defaultOpen, props.endpoint]);
 
   return null;
 }
 
+export {
+  createDevLensExportPayload,
+  formatDevLensExportJson,
+  formatDevLensExportMarkdown,
+  getAnnotationKind,
+} from "./output";
 export type { DevLensAnnotation, DevLensController, DevLensMode, DevLensMountOptions } from "./types";
+export type {
+  DevLensExportAnnotation,
+  DevLensExportPageContext,
+  DevLensExportPayload,
+  DevLensExportSummary,
+} from "./output";

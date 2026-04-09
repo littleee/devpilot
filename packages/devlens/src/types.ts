@@ -1,6 +1,52 @@
 export type DevLensMode = "annotate" | "stability" | "session";
 
-export type DevLensAnnotationStatus = "pending" | "resolved";
+export type DevLensAnnotationStatus =
+  | "pending"
+  | "acknowledged"
+  | "resolved"
+  | "dismissed";
+
+export const DEVLENS_OPEN_ANNOTATION_STATUSES = [
+  "pending",
+  "acknowledged",
+] as const;
+
+export const DEVLENS_CLOSED_ANNOTATION_STATUSES = [
+  "resolved",
+  "dismissed",
+] as const;
+
+export const DEVLENS_ANNOTATION_STATUSES = [
+  ...DEVLENS_OPEN_ANNOTATION_STATUSES,
+  ...DEVLENS_CLOSED_ANNOTATION_STATUSES,
+] as const;
+
+export function isDevLensAnnotationStatus(
+  value: unknown,
+): value is DevLensAnnotationStatus {
+  return (
+    typeof value === "string" &&
+    DEVLENS_ANNOTATION_STATUSES.includes(
+      value as DevLensAnnotationStatus,
+    )
+  );
+}
+
+export function isOpenDevLensAnnotationStatus(
+  status: DevLensAnnotationStatus,
+): boolean {
+  return (
+    DEVLENS_OPEN_ANNOTATION_STATUSES as readonly DevLensAnnotationStatus[]
+  ).includes(status);
+}
+
+export function isClosedDevLensAnnotationStatus(
+  status: DevLensAnnotationStatus,
+): boolean {
+  return (
+    DEVLENS_CLOSED_ANNOTATION_STATUSES as readonly DevLensAnnotationStatus[]
+  ).includes(status);
+}
 
 export type DevLensSelectionKind = "element" | "text" | "area";
 
@@ -44,8 +90,6 @@ export interface DevLensAnnotation {
 }
 
 export interface DevLensMountOptions {
-  appId?: string;
-  appName?: string;
   endpoint?: string;
   defaultOpen?: boolean;
 }

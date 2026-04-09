@@ -1,4 +1,8 @@
-import type { DevLensAnnotation } from "./types";
+import {
+  isDevLensAnnotationStatus,
+  type DevLensAnnotation,
+  type DevLensAnnotationStatus,
+} from "./types";
 
 const ANNOTATION_PREFIX = "devlens.annotations:";
 const POSITION_KEY = "devlens.position";
@@ -6,6 +10,19 @@ const POSITION_KEY = "devlens.position";
 export interface DevLensFloatingPosition {
   left: number;
   top: number;
+}
+
+function normalizeAnnotationStatus(value: unknown): DevLensAnnotationStatus {
+  return isDevLensAnnotationStatus(value) ? value : "pending";
+}
+
+function normalizeAnnotation(
+  annotation: DevLensAnnotation,
+): DevLensAnnotation {
+  return {
+    ...annotation,
+    status: normalizeAnnotationStatus(annotation.status),
+  };
 }
 
 function getAnnotationKey(pathname: string): string {
@@ -23,7 +40,7 @@ export function loadAnnotations(pathname: string): DevLensAnnotation[] {
       return [];
     }
     const parsed = JSON.parse(raw) as DevLensAnnotation[];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeAnnotation) : [];
   } catch {
     return [];
   }

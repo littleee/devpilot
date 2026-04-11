@@ -1,8 +1,8 @@
 {
-  "name": "devlens-workspace",
+  "name": "devpilot-workspace",
   "private": true,
   "version": "0.1.0",
-  "description": "DevLens workspace for the browser toolbar package and the upcoming local MCP bridge.",
+  "description": "DevPilot workspace for the browser toolbar package and the upcoming local MCP bridge.",
   "engines": {
     "node": ">=20"
   },
@@ -11,9 +11,9 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @littleee/devpilot",
+    "build": "npm run build --workspaces --if-present",
     "test": "npm run build",
-    "check": "npm run check --workspace @littleee/devpilot"
+    "check": "npm run check --workspaces --if-present"
   },
   "dependencies": {
     "react": "^18.2.0",

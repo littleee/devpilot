@@ -1,12 +1,12 @@
 import type {
-  DevLensAnnotation,
-  DevLensAnnotationStatus,
-  DevLensRect,
-  DevLensSelectionKind,
+  DevPilotAnnotation,
+  DevPilotAnnotationStatus,
+  DevPilotRect,
+  DevPilotSelectionKind,
 } from "./types";
-import { isOpenDevLensAnnotationStatus } from "./types";
+import { isOpenDevPilotAnnotationStatus } from "./types";
 
-export interface DevLensExportPageContext {
+export interface DevPilotExportPageContext {
   title: string;
   url: string;
   pathname: string;
@@ -16,7 +16,7 @@ export interface DevLensExportPageContext {
   };
 }
 
-export interface DevLensExportSummary {
+export interface DevPilotExportSummary {
   total: number;
   open: number;
   pending: number;
@@ -25,11 +25,11 @@ export interface DevLensExportSummary {
   dismissed: number;
 }
 
-export interface DevLensExportAnnotation {
+export interface DevPilotExportAnnotation {
   id: string;
   index: number;
-  kind: DevLensSelectionKind;
-  status: DevLensAnnotationStatus;
+  kind: DevPilotSelectionKind;
+  status: DevPilotAnnotationStatus;
   comment: string;
   elementName: string;
   elementPath: string;
@@ -39,21 +39,21 @@ export interface DevLensExportAnnotation {
   matchCount?: number;
   pageX: number;
   pageY: number;
-  rect: DevLensRect;
+  rect: DevPilotRect;
   createdAt: number;
   updatedAt: number;
 }
 
-export interface DevLensExportPayload {
-  schema: "devlens.page-feedback/v1";
+export interface DevPilotExportPayload {
+  schema: "devpilot.page-feedback/v1";
   copiedAt: string;
-  page: DevLensExportPageContext;
-  summary: DevLensExportSummary;
-  annotations: DevLensExportAnnotation[];
+  page: DevPilotExportPageContext;
+  summary: DevPilotExportSummary;
+  annotations: DevPilotExportAnnotation[];
 }
 
-export interface DevLensExportPayloadOptions {
-  annotations: DevLensAnnotation[];
+export interface DevPilotExportPayloadOptions {
+  annotations: DevPilotAnnotation[];
   pathname: string;
   title?: string;
   url?: string;
@@ -69,15 +69,15 @@ function normalizeInlineText(value: string): string {
 }
 
 function getStatusCount(
-  annotations: DevLensAnnotation[],
-  status: DevLensAnnotationStatus,
+  annotations: DevPilotAnnotation[],
+  status: DevPilotAnnotationStatus,
 ): number {
   return annotations.filter((item) => item.status === status).length;
 }
 
 export function getAnnotationKind(
-  annotation: DevLensAnnotation,
-): DevLensSelectionKind {
+  annotation: DevPilotAnnotation,
+): DevPilotSelectionKind {
   if (annotation.kind) {
     return annotation.kind;
   }
@@ -93,7 +93,7 @@ export function getAnnotationKind(
   return "element";
 }
 
-function formatAnnotationKind(kind: DevLensSelectionKind): string {
+function formatAnnotationKind(kind: DevPilotSelectionKind): string {
   switch (kind) {
     case "area":
       return "Area Annotation";
@@ -105,11 +105,11 @@ function formatAnnotationKind(kind: DevLensSelectionKind): string {
 }
 
 function createExportSummary(
-  annotations: DevLensAnnotation[],
-): DevLensExportSummary {
+  annotations: DevPilotAnnotation[],
+): DevPilotExportSummary {
   return {
     total: annotations.length,
-    open: annotations.filter((item) => isOpenDevLensAnnotationStatus(item.status))
+    open: annotations.filter((item) => isOpenDevPilotAnnotationStatus(item.status))
       .length,
     pending: getStatusCount(annotations, "pending"),
     acknowledged: getStatusCount(annotations, "acknowledged"),
@@ -118,7 +118,7 @@ function createExportSummary(
   };
 }
 
-function formatAnnotationStatus(status: DevLensAnnotationStatus): string {
+function formatAnnotationStatus(status: DevPilotAnnotationStatus): string {
   switch (status) {
     case "acknowledged":
       return "acknowledged";
@@ -131,7 +131,7 @@ function formatAnnotationStatus(status: DevLensAnnotationStatus): string {
   }
 }
 
-function getAnnotationHeading(annotation: DevLensExportAnnotation): string {
+function getAnnotationHeading(annotation: DevPilotExportAnnotation): string {
   if (annotation.kind === "area") {
     return normalizeInlineText(annotation.elementName);
   }
@@ -149,9 +149,9 @@ function getAnnotationHeading(annotation: DevLensExportAnnotation): string {
   return normalizeInlineText(annotation.elementName);
 }
 
-export function createDevLensExportPayload(
-  options: DevLensExportPayloadOptions,
-): DevLensExportPayload {
+export function createDevPilotExportPayload(
+  options: DevPilotExportPayloadOptions,
+): DevPilotExportPayload {
   const {
     annotations,
     pathname,
@@ -166,7 +166,7 @@ export function createDevLensExportPayload(
   };
 
   return {
-    schema: "devlens.page-feedback/v1",
+    schema: "devpilot.page-feedback/v1",
     copiedAt: copiedAt || new Date().toISOString(),
     page: {
       title:
@@ -200,14 +200,14 @@ export function createDevLensExportPayload(
   };
 }
 
-export function formatDevLensExportJson(
-  payload: DevLensExportPayload,
+export function formatDevPilotExportJson(
+  payload: DevPilotExportPayload,
 ): string {
   return JSON.stringify(payload, null, 2);
 }
 
-export function formatDevLensExportMarkdown(
-  payload: DevLensExportPayload,
+export function formatDevPilotExportMarkdown(
+  payload: DevPilotExportPayload,
 ): string {
   const lines = [
     `## Page Feedback: ${payload.page.pathname}`,

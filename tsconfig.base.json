@@ -15,8 +15,8 @@
     "outDir": "./dist"
   },
   "include": [
-    "packages/devlens/src/**/*.ts",
-    "packages/devlens/src/**/*.tsx"
+    "packages/devpilot/src/**/*.ts",
+    "packages/devpilot/src/**/*.tsx"
   ],
   "exclude": [
     "node_modules",

@@ -9,7 +9,7 @@ The long-term goal is a single workflow that can:
 - connect browser observations to local code through MCP
 - hand structured tasks to AI tools for assisted or automated fixes
 
-Today, the repository ships the first foundation of that workflow: a browser-native annotation toolbar called `DevLens`.
+Today, the repository ships the first foundation of that workflow: a browser-native annotation toolbar called `DevPilot`.
 
 ## What Exists Today
 
@@ -40,28 +40,28 @@ The published npm package is:
 npm install @littleee/devpilot
 ```
 
-Right now the package exports the `DevLens` mounting API and UI components.
+Right now the package exports the `DevPilot` mounting API and UI components.
 
 ## Quick Start
 
 Zero-config mount:
 
 ```ts
-import { mountDevLens } from "@littleee/devpilot";
+import { mountDevPilot } from "@littleee/devpilot";
 
-mountDevLens();
+mountDevPilot();
 ```
 
 React:
 
 ```tsx
-import { DevLens } from "@littleee/devpilot";
+import { DevPilot } from "@littleee/devpilot";
 
 export function App() {
   return (
     <>
       <YourApp />
-      <DevLens />
+      <DevPilot />
     </>
   );
 }
@@ -71,7 +71,7 @@ export function App() {
 
 Current workspace contents:
 
-- `packages/devlens`: the published browser toolbar package behind `@littleee/devpilot`
+- `packages/devpilot`: the published browser toolbar package behind `@littleee/devpilot`
 
 ## Development
 

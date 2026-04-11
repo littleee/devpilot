@@ -2,7 +2,7 @@
 
 `@littleee/devpilot` is the published package for the DevPilot browser workflow.
 
-Today, the package primarily exposes `DevLens`: a page-native annotation toolbar for collecting UI feedback and exporting it as structured context for AI-assisted code changes.
+Today, the package primarily exposes `DevPilot`: a page-native annotation toolbar for collecting UI feedback and exporting it as structured context for AI-assisted code changes.
 
 Over time, DevPilot is intended to grow beyond annotation into MCP-powered code navigation, stability observation, and AI-assisted repair loops.
 
@@ -24,15 +24,15 @@ npm install @littleee/devpilot
 ## Zero-config Mount
 
 ```ts
-import { mountDevLens } from "@littleee/devpilot";
+import { mountDevPilot } from "@littleee/devpilot";
 
-mountDevLens();
+mountDevPilot();
 ```
 
 ## Optional Mount Options
 
 ```ts
-mountDevLens({
+mountDevPilot({
   defaultOpen: false,
 });
 ```
@@ -40,13 +40,13 @@ mountDevLens({
 ## React
 
 ```tsx
-import { DevLens } from "@littleee/devpilot";
+import { DevPilot } from "@littleee/devpilot";
 
 export function App() {
   return (
     <>
       <YourApp />
-      <DevLens />
+      <DevPilot />
     </>
   );
 }
@@ -56,11 +56,11 @@ export function App() {
 
 ```ts
 import { createApp } from "vue";
-import { mountDevLens } from "@littleee/devpilot";
+import { mountDevPilot } from "@littleee/devpilot";
 import App from "./App.vue";
 
 createApp(App).mount("#app");
-mountDevLens();
+mountDevPilot();
 ```
 
 ## Current Scope

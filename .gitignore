@@ -36,3 +36,4 @@ packages/**/.env.*.local
 .idea/
 .vscode/
 DEVLENS_ROADMAP.md
+.claude/

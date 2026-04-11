@@ -1,17 +1,17 @@
 import React, { useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { createDevLensStyleElement, DevLensShell } from "./view";
-import type { DevLensController, DevLensMountOptions } from "./types";
+import { createDevPilotStyleElement, DevPilotShell } from "./view";
+import type { DevPilotController, DevPilotMountOptions } from "./types";
 
-const HOST_ATTR = "data-devlens-host";
+const HOST_ATTR = "data-devpilot-host";
 
 function createMountHost(): { host: HTMLDivElement; rootContainer: HTMLDivElement } {
   const host = document.createElement("div");
   host.setAttribute(HOST_ATTR, "true");
 
   const shadowRoot = host.attachShadow({ mode: "open" });
-  shadowRoot.appendChild(createDevLensStyleElement());
+  shadowRoot.appendChild(createDevPilotStyleElement());
 
   const rootContainer = document.createElement("div");
   shadowRoot.appendChild(rootContainer);
@@ -20,7 +20,7 @@ function createMountHost(): { host: HTMLDivElement; rootContainer: HTMLDivElemen
   return { host, rootContainer };
 }
 
-export function mountDevLens(options: DevLensMountOptions = {}): DevLensController {
+export function mountDevPilot(options: DevPilotMountOptions = {}): DevPilotController {
   if (typeof document === "undefined") {
     return {
       destroy() {
@@ -36,7 +36,7 @@ export function mountDevLens(options: DevLensMountOptions = {}): DevLensControll
 
   const { host, rootContainer } = createMountHost();
   const root: Root = createRoot(rootContainer);
-  root.render(<DevLensShell {...options} />);
+  root.render(<DevPilotShell {...options} />);
 
   return {
     destroy() {
@@ -46,9 +46,9 @@ export function mountDevLens(options: DevLensMountOptions = {}): DevLensControll
   };
 }
 
-export function DevLens(props: DevLensMountOptions): null {
+export function DevPilot(props: DevPilotMountOptions): null {
   useEffect(() => {
-    const controller = mountDevLens(props);
+    const controller = mountDevPilot(props);
     return () => controller.destroy();
   }, [props.defaultOpen, props.endpoint]);
 
@@ -56,15 +56,15 @@ export function DevLens(props: DevLensMountOptions): null {
 }
 
 export {
-  createDevLensExportPayload,
-  formatDevLensExportJson,
-  formatDevLensExportMarkdown,
+  createDevPilotExportPayload,
+  formatDevPilotExportJson,
+  formatDevPilotExportMarkdown,
   getAnnotationKind,
 } from "./output";
-export type { DevLensAnnotation, DevLensController, DevLensMode, DevLensMountOptions } from "./types";
+export type { DevPilotAnnotation, DevPilotController, DevPilotMode, DevPilotMountOptions } from "./types";
 export type {
-  DevLensExportAnnotation,
-  DevLensExportPageContext,
-  DevLensExportPayload,
-  DevLensExportSummary,
+  DevPilotExportAnnotation,
+  DevPilotExportPageContext,
+  DevPilotExportPayload,
+  DevPilotExportSummary,
 } from "./output";

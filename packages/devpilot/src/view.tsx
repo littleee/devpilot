@@ -1,31 +1,41 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  createDevLensExportPayload,
-  formatDevLensExportMarkdown,
+  createDevPilotExportPayload,
+  formatDevPilotExportMarkdown,
   getAnnotationKind,
 } from "./output";
 import {
+  clearSessionId,
   loadAnnotations,
   loadFloatingPosition,
+  loadSessionId,
   saveAnnotations,
   saveFloatingPosition,
+  saveSessionId,
 } from "./storage";
+import {
+  deleteRemoteAnnotation,
+  ensureRemoteSession,
+  getRemoteSession,
+  syncRemoteAnnotation,
+  updateRemoteAnnotation,
+} from "./sync";
 import type {
-  DevLensAnnotation,
-  DevLensAnnotationStatus,
-  DevLensMode,
-  DevLensMountOptions,
-  DevLensRect,
-  DevLensSelection,
+  DevPilotAnnotation,
+  DevPilotAnnotationStatus,
+  DevPilotMode,
+  DevPilotMountOptions,
+  DevPilotRect,
+  DevPilotSelection,
 } from "./types";
 import {
-  isClosedDevLensAnnotationStatus,
-  isOpenDevLensAnnotationStatus,
+  isClosedDevPilotAnnotationStatus,
+  isOpenDevPilotAnnotationStatus,
 } from "./types";
 
-const ROOT_ATTR = "data-devlens-root";
-const HOST_ATTR = "data-devlens-host";
+const ROOT_ATTR = "data-devpilot-root";
+const HOST_ATTR = "data-devpilot-host";
 const AREA_MATCH_SELECTOR = [
   "button",
   "a",
@@ -160,6 +170,8 @@ const AREA_SEMANTIC_TAGS = new Set([
   "th",
   "li",
 ]);
+const AREA_FRAGMENT_PATTERN =
+  /(?:^|[\s:_-])(icon|icons|suffix|prefix|thumb|track|handle|arrow|caret|clear|close|loading|spinner|addon|append|prepend|indicator|decorator)(?:$|[\s:_-])/i;
 
 const styles = `
   :host, * {
@@ -1186,7 +1198,7 @@ const styles = `
   }
 `;
 
-function ensureWithinViewport(rect: DevLensRect, width: number, height: number): { left: number; top: number } {
+function ensureWithinViewport(rect: DevPilotRect, width: number, height: number): { left: number; top: number } {
   const margin = 16;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
@@ -1212,7 +1224,7 @@ function ensureWithinViewport(rect: DevLensRect, width: number, height: number):
 }
 
 function ensurePopupPositionFromPoint(pageX: number, pageY: number, width: number, height: number): { left: number; top: number } {
-  const anchorRect: DevLensRect = {
+  const anchorRect: DevPilotRect = {
     left: pageX - window.scrollX - 14,
     top: pageY - window.scrollY - 14,
     width: 28,
@@ -1222,7 +1234,7 @@ function ensurePopupPositionFromPoint(pageX: number, pageY: number, width: numbe
   return ensureWithinViewport(anchorRect, width, height);
 }
 
-function toRect(rect: DOMRect): DevLensRect {
+function toRect(rect: DOMRect): DevPilotRect {
   return {
     left: rect.left,
     top: rect.top,
@@ -1231,7 +1243,7 @@ function toRect(rect: DOMRect): DevLensRect {
   };
 }
 
-function normalizeRect(startX: number, startY: number, endX: number, endY: number): DevLensRect {
+function normalizeRect(startX: number, startY: number, endX: number, endY: number): DevPilotRect {
   const left = Math.min(startX, endX);
   const top = Math.min(startY, endY);
 
@@ -1243,7 +1255,7 @@ function normalizeRect(startX: number, startY: number, endX: number, endY: numbe
   };
 }
 
-function rectsIntersect(a: DevLensRect, b: DevLensRect): boolean {
+function rectsIntersect(a: DevPilotRect, b: DevPilotRect): boolean {
   return !(
     a.left + a.width < b.left ||
     b.left + b.width < a.left ||
@@ -1252,18 +1264,18 @@ function rectsIntersect(a: DevLensRect, b: DevLensRect): boolean {
   );
 }
 
-function getRectArea(rect: DevLensRect): number {
+function getRectArea(rect: DevPilotRect): number {
   return Math.max(0, rect.width) * Math.max(0, rect.height);
 }
 
-function getRectCenter(rect: DevLensRect): { x: number; y: number } {
+function getRectCenter(rect: DevPilotRect): { x: number; y: number } {
   return {
     x: rect.left + rect.width / 2,
     y: rect.top + rect.height / 2,
   };
 }
 
-function isPointInsideRect(point: { x: number; y: number }, rect: DevLensRect): boolean {
+function isPointInsideRect(point: { x: number; y: number }, rect: DevPilotRect): boolean {
   return (
     point.x >= rect.left &&
     point.x <= rect.left + rect.width &&
@@ -1272,7 +1284,7 @@ function isPointInsideRect(point: { x: number; y: number }, rect: DevLensRect): 
   );
 }
 
-function getOverlapArea(a: DevLensRect, b: DevLensRect): number {
+function getOverlapArea(a: DevPilotRect, b: DevPilotRect): number {
   const overlapX = Math.min(a.left + a.width, b.left + b.width) - Math.max(a.left, b.left);
   const overlapY = Math.min(a.top + a.height, b.top + b.height) - Math.max(a.top, b.top);
 
@@ -1283,7 +1295,7 @@ function getOverlapArea(a: DevLensRect, b: DevLensRect): number {
   return overlapX * overlapY;
 }
 
-function isWithinDevLensTarget(target: EventTarget | null): boolean {
+function isWithinDevPilotTarget(target: EventTarget | null): boolean {
   return (
     target instanceof Element &&
     Boolean(
@@ -1293,7 +1305,7 @@ function isWithinDevLensTarget(target: EventTarget | null): boolean {
   );
 }
 
-function isWithinDevLensEvent(event: Event): boolean {
+function isWithinDevPilotEvent(event: Event): boolean {
   if (typeof event.composedPath === "function") {
     return event.composedPath().some((node) =>
       node instanceof Element &&
@@ -1301,7 +1313,7 @@ function isWithinDevLensEvent(event: Event): boolean {
     );
   }
 
-  return isWithinDevLensTarget(event.target);
+  return isWithinDevPilotTarget(event.target);
 }
 
 function describeElement(element: HTMLElement): { elementName: string; elementPath: string; nearbyText?: string } {
@@ -1333,7 +1345,7 @@ function getNormalizedElementText(element: HTMLElement): string {
   return (element.textContent || "").trim().replace(/\s+/g, " ");
 }
 
-function containsRect(outer: DevLensRect, inner: DevLensRect): boolean {
+function containsRect(outer: DevPilotRect, inner: DevPilotRect): boolean {
   return (
     outer.left <= inner.left &&
     outer.top <= inner.top &&
@@ -1342,7 +1354,7 @@ function containsRect(outer: DevLensRect, inner: DevLensRect): boolean {
   );
 }
 
-function buildAreaPreviewPoints(rect: DevLensRect): Array<[number, number]> {
+function buildAreaPreviewPoints(rect: DevPilotRect): Array<[number, number]> {
   const left = rect.left;
   const top = rect.top;
   const right = rect.left + rect.width;
@@ -1380,6 +1392,23 @@ function isAreaInteractiveLikeElement(element: HTMLElement): boolean {
   );
 }
 
+function isAreaIgnoredFragment(element: HTMLElement): boolean {
+  if (
+    element.getAttribute("aria-hidden") === "true" ||
+    element.getAttribute("role") === "presentation"
+  ) {
+    return true;
+  }
+
+  const className = typeof element.className === "string" ? element.className : "";
+  if (AREA_FRAGMENT_PATTERN.test(className) || AREA_FRAGMENT_PATTERN.test(element.id || "")) {
+    return true;
+  }
+
+  const tagName = element.tagName.toLowerCase();
+  return ["svg", "path", "i"].includes(tagName) && !getNormalizedElementText(element);
+}
+
 function hasNestedAreaContent(element: HTMLElement): boolean {
   return Boolean(element.querySelector(AREA_NESTED_CONTENT_SELECTOR));
 }
@@ -1403,8 +1432,8 @@ function countMeaningfulAreaChildren(element: HTMLElement): number {
 
 function isAreaStructuredContainer(
   element: HTMLElement,
-  elementRect: DevLensRect,
-  selectionRect: DevLensRect,
+  elementRect: DevPilotRect,
+  selectionRect: DevPilotRect,
 ): boolean {
   const tagName = element.tagName.toLowerCase();
 
@@ -1441,9 +1470,13 @@ function isAreaStructuredContainer(
 
 function shouldIncludeAreaPreviewElement(
   element: HTMLElement,
-  elementRect: DevLensRect,
-  selectionRect: DevLensRect,
+  elementRect: DevPilotRect,
+  selectionRect: DevPilotRect,
 ): boolean {
+  if (isAreaIgnoredFragment(element)) {
+    return false;
+  }
+
   const tagName = element.tagName.toLowerCase();
   const text = getNormalizedElementText(element);
   const isInteractive = isAreaInteractiveLikeElement(element);
@@ -1464,22 +1497,25 @@ function shouldIncludeAreaPreviewElement(
 }
 
 function shouldIncludeCommittedAreaElement(element: HTMLElement): boolean {
+  if (isAreaIgnoredFragment(element)) {
+    return false;
+  }
+
   const tagName = element.tagName.toLowerCase();
   const role = element.getAttribute("role");
-  const text = getNormalizedElementText(element);
 
   if (AREA_SEMANTIC_TAGS.has(tagName) || (role && AREA_INTERACTIVE_ROLES.has(role))) {
     return true;
   }
 
   if (tagName === "div" || tagName === "span") {
-    return (Boolean(text) || isAreaInteractiveLikeElement(element)) && !hasNestedAreaContent(element);
+    return isAreaInteractiveLikeElement(element) && !hasNestedAreaContent(element);
   }
 
   return false;
 }
 
-function collectAreaPreviewRects(rect: DevLensRect): DevLensRect[] {
+function collectAreaPreviewRects(rect: DevPilotRect): DevPilotRect[] {
   const left = rect.left;
   const top = rect.top;
   const right = rect.left + rect.width;
@@ -1507,9 +1543,14 @@ function collectAreaPreviewRects(rect: DevLensRect): DevLensRect[] {
     }
   });
 
-  const allMatching: DevLensRect[] = [];
+  const allMatching: DevPilotRect[] = [];
+  const sortedCandidates = Array.from(candidateElements).sort((a, b) => {
+    const aRect = toRect(a.getBoundingClientRect());
+    const bRect = toRect(b.getBoundingClientRect());
+    return getRectArea(bRect) - getRectArea(aRect);
+  });
 
-  candidateElements.forEach((element) => {
+  sortedCandidates.forEach((element) => {
     if (element.closest(`[${ROOT_ATTR}]`) || element.closest(`[${HOST_ATTR}]`)) {
       return;
     }
@@ -1555,9 +1596,9 @@ function collectAreaPreviewRects(rect: DevLensRect): DevLensRect[] {
 }
 
 function collectAreaMatches(
-  rect: DevLensRect,
-): Array<{ element: HTMLElement; rect: DevLensRect }> {
-  const allMatching: Array<{ element: HTMLElement; rect: DevLensRect }> = [];
+  rect: DevPilotRect,
+): Array<{ element: HTMLElement; rect: DevPilotRect }> {
+  const allMatching: Array<{ element: HTMLElement; rect: DevPilotRect }> = [];
   const selector = `${AREA_MATCH_SELECTOR}, div, span`;
 
   document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
@@ -1605,7 +1646,7 @@ function collectAreaMatches(
     });
 }
 
-function getUnionRect(rects: DevLensRect[]): DevLensRect | null {
+function getUnionRect(rects: DevPilotRect[]): DevPilotRect | null {
   if (rects.length === 0) {
     return null;
   }
@@ -1623,8 +1664,8 @@ function getUnionRect(rects: DevLensRect[]): DevLensRect | null {
   };
 }
 
-function describeAreaDraftPreview(rect: DevLensRect): {
-  matchRects: DevLensRect[];
+function describeAreaDraftPreview(rect: DevPilotRect): {
+  matchRects: DevPilotRect[];
   matchCount: number;
 } {
   const matchRects = collectAreaPreviewRects(rect);
@@ -1635,13 +1676,13 @@ function describeAreaDraftPreview(rect: DevLensRect): {
   };
 }
 
-function describeCommittedAreaSelection(rect: DevLensRect): {
-  rect: DevLensRect;
+function describeCommittedAreaSelection(rect: DevPilotRect): {
+  rect: DevPilotRect;
   elementName: string;
   elementPath: string;
   nearbyText?: string;
   relatedElements?: string[];
-  matchRects: DevLensRect[];
+  matchRects: DevPilotRect[];
   matchCount: number;
 } {
   const matches = collectAreaMatches(rect);
@@ -1687,7 +1728,7 @@ function describeCommittedAreaSelection(rect: DevLensRect): {
         : `区域 ${Math.round(snappedRect.width)}×${Math.round(snappedRect.height)}`,
     nearbyText: nearbyText || undefined,
     relatedElements,
-    matchRects: matches.map((item) => item.rect).slice(0, 24),
+    matchRects: matches.map((item) => item.rect),
     matchCount: matches.length,
   };
 }
@@ -1704,7 +1745,7 @@ function createId(): string {
   return `ann_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function getAnnotationStatusLabel(status: DevLensAnnotationStatus): string {
+function getAnnotationStatusLabel(status: DevPilotAnnotationStatus): string {
   switch (status) {
     case "acknowledged":
       return "处理中";
@@ -1718,7 +1759,7 @@ function getAnnotationStatusLabel(status: DevLensAnnotationStatus): string {
 }
 
 function stopEditableEventPropagation(event: React.SyntheticEvent<HTMLElement>): void {
-  // Keep host-page global shortcuts from stealing keystrokes out of DevLens inputs.
+  // Keep host-page global shortcuts from stealing keystrokes out of DevPilot inputs.
   event.stopPropagation();
 }
 
@@ -1757,6 +1798,38 @@ async function copyTextToClipboard(text: string): Promise<boolean> {
   }
 }
 
+function sortAnnotationsByUpdatedAt(
+  annotations: DevPilotAnnotation[],
+): DevPilotAnnotation[] {
+  return [...annotations].sort((a, b) => {
+    if (b.updatedAt !== a.updatedAt) {
+      return b.updatedAt - a.updatedAt;
+    }
+
+    return b.createdAt - a.createdAt;
+  });
+}
+
+function mergeRemoteAnnotations(
+  localAnnotations: DevPilotAnnotation[],
+  remoteAnnotations: DevPilotAnnotation[],
+): DevPilotAnnotation[] {
+  const merged = new Map<string, DevPilotAnnotation>();
+
+  remoteAnnotations.forEach((annotation) => {
+    merged.set(annotation.id, annotation);
+  });
+
+  localAnnotations.forEach((annotation) => {
+    const remote = merged.get(annotation.id);
+    if (!remote || annotation.updatedAt > remote.updatedAt) {
+      merged.set(annotation.id, annotation);
+    }
+  });
+
+  return sortAnnotationsByUpdatedAt(Array.from(merged.values()));
+}
+
 function getDefaultFloatingPosition() {
   const margin = 24;
   const size = 44;
@@ -1777,7 +1850,7 @@ function clampFloatingPosition(position: { left: number; top: number }, width: n
   };
 }
 
-function DevLensGlyph() {
+function DevPilotGlyph() {
   return (
     <svg viewBox="0 0 18 18" aria-hidden="true" className="dl-launcher-glyph">
       <circle cx="9" cy="9" r="8" fill="currentColor" opacity="0.16" />
@@ -1859,33 +1932,35 @@ function useScrollTick(): number {
   return tick;
 }
 
-function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
+function DevPilotApp({ defaultOpen = false, endpoint }: DevPilotMountOptions) {
   const pathname = window.location.pathname || "/";
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [mode, setMode] = useState<DevLensMode>("annotate");
-  const [annotations, setAnnotations] = useState<DevLensAnnotation[]>(() => loadAnnotations(pathname));
+  const [mode, setMode] = useState<DevPilotMode>("annotate");
+  const [annotations, setAnnotations] = useState<DevPilotAnnotation[]>(() => loadAnnotations(pathname));
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => loadSessionId(pathname));
   const [floatingPosition, setFloatingPosition] = useState(() => loadFloatingPosition() || getDefaultFloatingPosition());
-  const [selection, setSelection] = useState<DevLensSelection | null>(null);
+  const [selection, setSelection] = useState<DevPilotSelection | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
-  const [hoverRect, setHoverRect] = useState<DevLensRect | null>(null);
-  const [areaDraftRect, setAreaDraftRect] = useState<DevLensRect | null>(null);
+  const [hoverRect, setHoverRect] = useState<DevPilotRect | null>(null);
+  const [areaDraftRect, setAreaDraftRect] = useState<DevPilotRect | null>(null);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
   const [isTextSelectionPending, setIsTextSelectionPending] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const scrollTick = useScrollTick();
   const openAnnotations = useMemo(
-    () => annotations.filter((item) => isOpenDevLensAnnotationStatus(item.status)),
+    () => annotations.filter((item) => isOpenDevPilotAnnotationStatus(item.status)),
     [annotations],
   );
   const closedAnnotations = useMemo(
-    () => annotations.filter((item) => isClosedDevLensAnnotationStatus(item.status)),
+    () => annotations.filter((item) => isClosedDevPilotAnnotationStatus(item.status)),
     [annotations],
   );
   const activeAnnotation = useMemo(
     () => annotations.find((item) => item.id === activeAnnotationId) || null,
     [annotations, activeAnnotationId],
   );
+  const annotationsRef = useRef<DevPilotAnnotation[]>(annotations);
   const popupRef = useRef<HTMLTextAreaElement | null>(null);
   const toolbarRef = useRef<HTMLDivElement | HTMLButtonElement | null>(null);
   const dragRef = useRef<{
@@ -1911,8 +1986,112 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
   }, [annotations, pathname]);
 
   useEffect(() => {
+    annotationsRef.current = annotations;
+  }, [annotations]);
+
+  useEffect(() => {
     saveFloatingPosition(floatingPosition);
   }, [floatingPosition]);
+
+  useEffect(() => {
+    if (!endpoint) {
+      clearSessionId(pathname);
+      setCurrentSessionId(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    ensureRemoteSession(endpoint, {
+      pageKey: `${window.location.origin}${pathname}`,
+      pathname,
+      url: window.location.href,
+      title: document.title || pathname,
+    })
+      .then((session) => {
+        if (cancelled) {
+          return;
+        }
+
+        setCurrentSessionId(session.id);
+        saveSessionId(pathname, session.id);
+      })
+      .catch((error) => {
+        console.warn("[DevPilot] Failed to ensure remote session:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [endpoint, pathname]);
+
+  useEffect(() => {
+    if (!endpoint || !currentSessionId) {
+      return;
+    }
+
+    let cancelled = false;
+    let syncing = false;
+
+    const syncNow = async () => {
+      if (syncing) {
+        return;
+      }
+
+      syncing = true;
+
+      try {
+        let remoteSession = await getRemoteSession(endpoint, currentSessionId);
+        if (cancelled) {
+          return;
+        }
+
+        const localSnapshot = annotationsRef.current;
+        const remoteById = new Map(
+          remoteSession.annotations.map((annotation) => [annotation.id, annotation]),
+        );
+
+        let pushedLocalChanges = false;
+        for (const annotation of localSnapshot) {
+          const remote = remoteById.get(annotation.id);
+          if (!remote) {
+            await syncRemoteAnnotation(endpoint, currentSessionId, annotation);
+            pushedLocalChanges = true;
+            continue;
+          }
+
+          if (annotation.updatedAt > remote.updatedAt) {
+            await updateRemoteAnnotation(endpoint, annotation.id, annotation);
+            pushedLocalChanges = true;
+          }
+        }
+
+        if (pushedLocalChanges) {
+          remoteSession = await getRemoteSession(endpoint, currentSessionId);
+          if (cancelled) {
+            return;
+          }
+        }
+
+        setAnnotations((current) => {
+          const next = mergeRemoteAnnotations(current, remoteSession.annotations);
+          return JSON.stringify(next) === JSON.stringify(current) ? current : next;
+        });
+      } catch (error) {
+        console.warn("[DevPilot] Failed to sync annotations:", error);
+      } finally {
+        syncing = false;
+      }
+    };
+
+    syncNow();
+    const intervalId = window.setInterval(syncNow, 2500);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [currentSessionId, endpoint]);
 
   useEffect(() => {
     const syncPosition = () => {
@@ -1975,7 +2154,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
         return;
       }
 
-      if (!event.shiftKey || event.button !== 0 || isWithinDevLensEvent(event)) {
+      if (!event.shiftKey || event.button !== 0 || isWithinDevPilotEvent(event)) {
         return;
       }
 
@@ -2028,7 +2207,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
         return;
       }
 
-      if (isWithinDevLensEvent(event)) {
+      if (isWithinDevPilotEvent(event)) {
         setHoverRect(null);
         return;
       }
@@ -2127,7 +2306,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
     };
 
     const onClick = (event: MouseEvent) => {
-      if (isWithinDevLensEvent(event)) {
+      if (isWithinDevPilotEvent(event)) {
         return;
       }
 
@@ -2301,12 +2480,12 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
     [areaDraftRect],
   );
 
-  const markerStyle = (annotation: DevLensAnnotation) => ({
+  const markerStyle = (annotation: DevPilotAnnotation) => ({
     left: Math.max(12, annotation.pageX - window.scrollX),
     top: Math.max(12, annotation.pageY - window.scrollY - 14),
   });
 
-  const editAnnotation = (annotation: DevLensAnnotation) => {
+  const editAnnotation = (annotation: DevPilotAnnotation) => {
     setSelection({
       kind: annotation.selectedText ? "text" : annotation.relatedElements?.length ? "area" : "element",
       elementName: annotation.elementName,
@@ -2324,7 +2503,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
     setActiveAnnotationId(annotation.id);
   };
 
-  const openAnnotationEditor = (annotation: DevLensAnnotation) => {
+  const openAnnotationEditor = (annotation: DevPilotAnnotation) => {
     setIsOpen(true);
     setMode("annotate");
     editAnnotation(annotation);
@@ -2332,24 +2511,34 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
 
   const setAnnotationStatus = (
     annotationId: string,
-    nextStatus: DevLensAnnotationStatus,
+    nextStatus: DevPilotAnnotationStatus,
   ) => {
+    const nextUpdatedAt = Date.now();
     setAnnotations((current) =>
       current.map((item) =>
         item.id === annotationId
           ? {
               ...item,
               status: nextStatus,
-              updatedAt: Date.now(),
+              updatedAt: nextUpdatedAt,
             }
           : item,
       ),
     );
     setActiveAnnotationId(annotationId);
+
+    if (endpoint) {
+      updateRemoteAnnotation(endpoint, annotationId, {
+        status: nextStatus,
+        updatedAt: nextUpdatedAt,
+      }).catch((error) => {
+        console.warn("[DevPilot] Failed to update annotation status:", error);
+      });
+    }
   };
 
   const handleCopyAnnotations = async () => {
-    const payload = createDevLensExportPayload({
+    const payload = createDevPilotExportPayload({
       annotations: openAnnotations,
       pathname,
       title: document.title || "Untitled Page",
@@ -2359,7 +2548,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
         height: window.innerHeight,
       },
     });
-    const text = formatDevLensExportMarkdown(payload);
+    const text = formatDevPilotExportMarkdown(payload);
     const didCopy = await copyTextToClipboard(text);
     setCopyState(didCopy ? "copied" : "failed");
   };
@@ -2371,30 +2560,42 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
 
     const now = Date.now();
     if (editingId) {
+      const existing = annotations.find((item) => item.id === editingId);
+      const updatedAnnotation: DevPilotAnnotation = {
+        id: editingId,
+        pathname,
+        createdAt: existing?.createdAt || now,
+        updatedAt: now,
+        kind: selection.kind,
+        status: existing?.status || "pending",
+        comment: draft.trim(),
+        elementName: selection.elementName,
+        elementPath: selection.elementPath,
+        matchCount: selection.matchCount,
+        selectedText: selection.selectedText,
+        nearbyText: selection.nearbyText,
+        relatedElements: selection.relatedElements,
+        pageX: selection.pageX,
+        pageY: selection.pageY,
+        rect: selection.rect,
+      };
+
       setAnnotations((current) =>
         current.map((item) =>
           item.id === editingId
-            ? {
-                ...item,
-                kind: selection.kind,
-                comment: draft.trim(),
-                updatedAt: now,
-                elementName: selection.elementName,
-                elementPath: selection.elementPath,
-                matchCount: selection.matchCount,
-                selectedText: selection.selectedText,
-                nearbyText: selection.nearbyText,
-                relatedElements: selection.relatedElements,
-                pageX: selection.pageX,
-                pageY: selection.pageY,
-                rect: selection.rect,
-              }
+            ? updatedAnnotation
             : item,
         ),
       );
       setActiveAnnotationId(editingId);
+
+      if (endpoint) {
+        updateRemoteAnnotation(endpoint, editingId, updatedAnnotation).catch((error) => {
+          console.warn("[DevPilot] Failed to update annotation:", error);
+        });
+      }
     } else {
-      const annotation: DevLensAnnotation = {
+      const annotation: DevPilotAnnotation = {
         id: createId(),
         pathname,
         createdAt: now,
@@ -2412,8 +2613,14 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
         pageY: selection.pageY,
         rect: selection.rect,
       };
-      setAnnotations((current) => [annotation, ...current]);
+      setAnnotations((current) => sortAnnotationsByUpdatedAt([annotation, ...current]));
       setActiveAnnotationId(annotation.id);
+
+      if (endpoint && currentSessionId) {
+        syncRemoteAnnotation(endpoint, currentSessionId, annotation).catch((error) => {
+          console.warn("[DevPilot] Failed to create remote annotation:", error);
+        });
+      }
     }
 
     setSelection(null);
@@ -2432,6 +2639,13 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
     if (activeAnnotationId === editingId) {
       setActiveAnnotationId(null);
     }
+
+    if (endpoint) {
+      deleteRemoteAnnotation(endpoint, editingId).catch((error) => {
+        console.warn("[DevPilot] Failed to delete annotation:", error);
+      });
+    }
+
     setSelection(null);
     setEditingId(null);
     setDraft("");
@@ -2445,7 +2659,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
     : null;
   const popupPosition = selection ? ensurePopupPositionFromPoint(selection.pageX, selection.pageY, 320, 280) : null;
   const activeFocusAnnotation = !selection && isOpen && mode === "session" ? activeAnnotation : null;
-  const togglePanelMode = (nextMode: DevLensMode) => {
+  const togglePanelMode = (nextMode: DevPilotMode) => {
     setMode((current) => (current === nextMode ? "annotate" : nextMode));
   };
   const startDragging = (event: React.PointerEvent<HTMLElement>) => {
@@ -2482,7 +2696,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
   const panelBottom = Math.max(16, window.innerHeight - floatingPosition.top + 12);
 
   return (
-    <div className="dl-root" data-devlens-root="">
+    <div className="dl-root" data-devpilot-root="">
       {isOpen && mode === "annotate" && hoverRect ? (
         <div
           className="dl-highlight"
@@ -2929,7 +3143,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
                           重新设为待处理
                         </button>
                       ) : null}
-                      {isClosedDevLensAnnotationStatus(activeAnnotation.status) ? (
+                      {isClosedDevPilotAnnotationStatus(activeAnnotation.status) ? (
                         <button
                           className="dl-popup-action"
                           data-kind="ghost"
@@ -2994,7 +3208,7 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
             onPointerDown={startDragging}
             title="拖拽工具条"
           >
-            <DevLensGlyph />
+            <DevPilotGlyph />
           </span>
           <span className="dl-toolbar-status" title="当前为本地标注模式">
             <span className="dl-toolbar-status-dot" />
@@ -3050,9 +3264,9 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
             setIsOpen(true);
           }}
           onPointerDown={startDragging}
-          title="打开 DevLens"
+          title="打开 DevPilot"
         >
-          <DevLensGlyph />
+          <DevPilotGlyph />
           {summary.open > 0 ? <span className="dl-launcher-badge">{summary.open}</span> : null}
         </button>
       )}
@@ -3112,12 +3326,12 @@ function DevLensApp({ defaultOpen = false }: DevLensMountOptions) {
   );
 }
 
-export function createDevLensStyleElement(): HTMLStyleElement {
+export function createDevPilotStyleElement(): HTMLStyleElement {
   const style = document.createElement("style");
   style.textContent = styles;
   return style;
 }
 
-export function DevLensShell(props: DevLensMountOptions) {
-  return <DevLensApp {...props} />;
+export function DevPilotShell(props: DevPilotMountOptions) {
+  return <DevPilotApp {...props} />;
 }

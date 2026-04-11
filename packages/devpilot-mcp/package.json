@@ -1,0 +1,54 @@
+{
+  "name": "@littleee/devpilot-mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Local HTTP bridge and MCP server for DevPilot annotations.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/littleee/stability-copilot-platform.git",
+    "directory": "packages/devpilot-mcp"
+  },
+  "homepage": "https://github.com/littleee/stability-copilot-platform/tree/main/packages/devpilot-mcp",
+  "bugs": {
+    "url": "https://github.com/littleee/stability-copilot-platform/issues"
+  },
+  "keywords": [
+    "mcp",
+    "devtools",
+    "annotation",
+    "sqlite",
+    "http-bridge"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "devpilot-mcp": "./dist/index.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
+    "check": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.5",
+    "better-sqlite3": "^11.8.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13"
+  }
+}

@@ -13,7 +13,12 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "test": "npm run build && node --test tests/*.test.mjs",
-    "check": "npm run check --workspaces --if-present"
+    "check": "npm run check --workspaces --if-present",
+    "demo:claude:mcp:web": "npm --prefix examples/claude-mcp-demo run dev -- --host 127.0.0.1 --port 4175",
+    "demo:claude:mcp:web:build": "npm --prefix examples/claude-mcp-demo run build",
+    "demo:claude:mcp:bridge": "node packages/devpilot-mcp/dist/index.js server --port 5213",
+    "demo:claude:mcp:register": "node scripts/demo/register-claude-mcp-demo.mjs",
+    "demo:claude:mcp:unregister": "node scripts/demo/remove-claude-mcp-demo.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",

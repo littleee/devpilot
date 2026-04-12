@@ -16,6 +16,7 @@ pnpm-debug.log*
 # local caches
 .npm-cache/
 .cache/
+.tmp/
 
 # environment files
 .env
@@ -35,5 +36,6 @@ packages/**/.env.*.local
 .DS_Store
 .idea/
 .vscode/
+.mcp.json
 DEVLENS_ROADMAP.md
 .claude/

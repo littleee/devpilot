@@ -94,62 +94,59 @@ export function StabilityPanel({
 }: StabilityPanelProps) {
   return (
     <section
-      className="dl-session-panel"
+      className="dl-session-panel dl-stability-panel"
       style={{ left: panelLeft, bottom: panelBottom }}
     >
-      <div className="dl-session-header">
-        <div>
+      <div className="dl-session-header dl-stability-panel-header">
+        <div className="dl-session-header-main">
           <h3 className="dl-session-title">稳定性副驾</h3>
-          <p className="dl-session-subtitle">
-            先记录问题、自动附带页面上下文；只有在你点击“修复”后，才会显式生成修复请求，不会自动改代码。
-          </p>
         </div>
-        <div className="dl-session-header-actions">
-          <button
-            className="dl-popup-action"
-            data-kind={autoObservationEnabled ? "primary" : "ghost"}
-            onClick={onToggleObservation}
-            title="开启后将自动记录 JS 异常、Promise 拒绝和接口失败"
-          >
-            {autoObservationEnabled ? "关闭自动观察" : "开启自动观察"}
-          </button>
-          <button
-            className="dl-popup-action"
-            data-kind={
-              stabilityCopyState === "failed"
-                ? "danger"
-                : stabilityCopyState === "copied"
-                  ? "primary"
-                  : "ghost"
-            }
-            disabled={openStabilityItems.length === 0}
-            onClick={onCopyOpenItems}
-            title="复制当前仍需处理的稳定性问题"
-          >
-            {stabilityCopyState === "copied"
-              ? "已复制稳定性问题"
-              : stabilityCopyState === "failed"
-                ? "复制失败"
-                : "复制稳定性问题"}
-          </button>
-          <button
-            className="dl-popup-action"
-            data-kind="primary"
-            onClick={() => onOpenComposer()}
-          >
-            新建问题
-          </button>
-          <button
-            className="dl-toolbar-icon-button"
-            data-kind="secondary"
-            onClick={onClose}
-            title="关闭稳定性面板"
-          >
-            <CollapseIcon />
-          </button>
-        </div>
+        <button
+          className="dl-toolbar-icon-button dl-stability-panel-close"
+          data-kind="secondary"
+          onClick={onClose}
+          title="关闭稳定性面板"
+        >
+          <CollapseIcon />
+        </button>
       </div>
-      <div className="dl-summary-grid">
+      <div className="dl-stability-header-actions">
+        <button
+          className="dl-popup-action"
+          data-kind={autoObservationEnabled ? "primary" : "ghost"}
+          onClick={onToggleObservation}
+          title="开启后将自动记录 JS 异常、Promise 拒绝和接口失败"
+        >
+          {autoObservationEnabled ? "关闭自动观察" : "开启自动观察"}
+        </button>
+        <button
+          className="dl-popup-action"
+          data-kind={
+            stabilityCopyState === "failed"
+              ? "danger"
+              : stabilityCopyState === "copied"
+                ? "primary"
+                : "ghost"
+          }
+          disabled={openStabilityItems.length === 0}
+          onClick={onCopyOpenItems}
+          title="复制当前仍需处理的稳定性问题"
+        >
+          {stabilityCopyState === "copied"
+            ? "已复制稳定性问题"
+            : stabilityCopyState === "failed"
+              ? "复制失败"
+              : "复制稳定性问题"}
+        </button>
+        <button
+          className="dl-popup-action"
+          data-kind="primary"
+          onClick={() => onOpenComposer()}
+        >
+          新建问题
+        </button>
+      </div>
+      <div className="dl-summary-grid dl-stability-summary-grid">
         <div className="dl-summary-card">
           <span className="dl-summary-label">未解决</span>
           <span className="dl-summary-value">{openStabilityItems.length}</span>
@@ -173,7 +170,7 @@ export function StabilityPanel({
           </span>
         </div>
       </div>
-      <div className="dl-session-body">
+      <div className="dl-session-body dl-stability-panel-body">
         <div className="dl-session-section">
           <div className="dl-session-section-header">
             <h4 className="dl-session-section-title">
@@ -183,21 +180,10 @@ export function StabilityPanel({
                   : "记录问题"
                 : "快速记录"}
             </h4>
-            <span className="dl-section-note">
-              自动带上页面、viewport、session 和当前未完成标注摘要
-            </span>
           </div>
           <div className="dl-session-detail">
             <div className="dl-detail-card">
               <div className="dl-stability-form">
-                <p className="dl-stability-context-note">
-                  适合记录页面异常、接口失败、业务流程中断、线上告警和疑难问题。保存后可复制给 AI；点击“修复”才会显式生成修复请求。
-                </p>
-                <p className="dl-stability-context-note">
-                  {autoObservationEnabled
-                    ? "自动观察已开启：当前会自动监听 JS 异常、Promise 未处理拒绝，以及 fetch / XHR 的 5xx 和网络失败。"
-                    : "自动观察当前关闭：你可以手动记录问题，也可以开启自动观察，让系统把异常自动沉淀为稳定性问题。 "}
-                </p>
                 {isStabilityComposerOpen ? (
                   <>
                     <div className="dl-stability-grid">
@@ -323,11 +309,6 @@ export function StabilityPanel({
                   </>
                 ) : (
                   <div className="dl-stability-form-actions">
-                    <div className="dl-stability-form-actions-left">
-                      <span className="dl-section-note">
-                        当前共 {stabilitySummary.total} 条稳定性问题记录
-                      </span>
-                    </div>
                     <div className="dl-stability-form-actions-right">
                       <button
                         className="dl-popup-action"
@@ -425,9 +406,6 @@ export function StabilityPanel({
         <div className="dl-session-section">
           <div className="dl-session-section-header">
             <h4 className="dl-session-section-title">当前详情</h4>
-            <span className="dl-section-note">
-              这里会继续承接后续的 incident observation 和 AI 回复
-            </span>
           </div>
           <div className="dl-session-detail">
             {activeStabilityItem ? (

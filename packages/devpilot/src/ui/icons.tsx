@@ -99,3 +99,41 @@ export function CollapseIcon() {
     </svg>
   );
 }
+
+export function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" className="dl-toolbar-icon">
+      <path
+        d="M2.5 4.2h4.2M9.6 4.2h3.9M2.5 8h7.1M12.5 8h1M2.5 11.8h1.8M8.1 11.8h5.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <circle
+        cx="8.1"
+        cy="4.2"
+        r="1.7"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle
+        cx="10.8"
+        cy="8"
+        r="1.7"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle
+        cx="5.8"
+        cy="11.8"
+        r="1.7"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}

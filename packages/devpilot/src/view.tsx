@@ -6,6 +6,7 @@ import {
   describeCommittedAreaSelection,
   describeElement,
   HOST_ATTR,
+  isPointInsideRect,
   isWithinDevPilotEvent,
   isWithinDevPilotTarget,
   normalizeRect,
@@ -42,9 +43,11 @@ import {
   AnnotateIcon,
   CollapseIcon,
   DevPilotGlyph,
+  SettingsIcon,
   SessionIcon,
   StabilityIcon,
 } from "./ui/icons";
+import { SettingsPanel } from "./ui/settings-panel";
 import { SessionPanel } from "./ui/session-panel";
 import { StabilityPanel } from "./ui/stability-panel";
 import {
@@ -93,7 +96,6 @@ import type {
   DevPilotSelection,
 } from "./types";
 import {
-  isClosedDevPilotAnnotationStatus,
   isDevPilotStabilitySeverity,
   isOpenDevPilotAnnotationStatus,
   resolveDevPilotFeatures,
@@ -189,30 +191,6 @@ const styles = `
     background: rgba(255, 255, 255, 0.08);
   }
 
-  .dl-toolbar-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 24px;
-    margin-right: 4px;
-    padding: 0 8px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.58);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-  }
-
-  .dl-toolbar-status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    background: #22c55e;
-    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.16);
-    flex: 0 0 auto;
-  }
-
   .dl-drag-handle {
     display: inline-grid;
     place-items: center;
@@ -299,8 +277,8 @@ const styles = `
   }
 
   .dl-toolbar-icon {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     flex: 0 0 auto;
   }
 
@@ -319,12 +297,33 @@ const styles = `
     background: transparent;
     color: rgba(255, 255, 255, 0.72);
     cursor: pointer;
-    transition: background 120ms ease, color 120ms ease, transform 120ms ease;
+    position: relative;
+    overflow: hidden;
+    transition:
+      background 120ms ease,
+      color 120ms ease,
+      transform 120ms ease,
+      box-shadow 120ms ease;
   }
 
   .dl-toolbar-icon-button:hover {
     background: rgba(255, 255, 255, 0.08);
     color: rgba(255, 255, 255, 0.92);
+  }
+
+  .dl-toolbar-icon-button[data-active="true"] {
+    background: #2f6fed;
+    color: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+
+  .dl-toolbar-icon-button[data-active="true"]::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: 17px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
+    pointer-events: none;
   }
 
   .dl-highlight {
@@ -653,15 +652,20 @@ const styles = `
 
   .dl-session-panel {
     position: fixed;
+    display: flex;
+    flex-direction: column;
     width: min(392px, calc(100vw - 32px));
-    max-height: min(68vh, 640px);
+    max-height: min(72vh, 680px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
     background: rgba(22, 22, 22, 0.98);
     box-shadow:
       0 24px 60px rgba(15, 23, 42, 0.34),
       0 0 0 1px rgba(255, 255, 255, 0.03);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     backdrop-filter: blur(18px);
     pointer-events: auto;
     animation: dl-panel-enter 180ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -669,25 +673,35 @@ const styles = `
 
   .dl-session-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
     padding: 16px 18px 14px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
+  .dl-session-header-main {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+
   .dl-session-header-actions {
-    display: inline-flex;
-    align-items: center;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
     gap: 8px;
     flex: 0 0 auto;
+    flex-wrap: wrap;
+    max-width: min(100%, 260px);
   }
 
   .dl-session-title {
     margin: 0;
     font-size: 15px;
     font-weight: 800;
+    line-height: 1.35;
     color: #ffffff;
+    word-break: break-word;
   }
 
   .dl-session-subtitle {
@@ -695,6 +709,43 @@ const styles = `
     font-size: 12px;
     line-height: 1.5;
     color: rgba(255, 255, 255, 0.56);
+    word-break: break-word;
+  }
+
+  .dl-stability-panel {
+    max-height: min(78vh, 760px);
+  }
+
+  .dl-stability-panel .dl-session-header {
+    border-bottom: 0;
+    padding-bottom: 12px;
+  }
+
+  .dl-stability-panel-header {
+    align-items: center;
+  }
+
+  .dl-stability-panel-close {
+    flex: 0 0 auto;
+  }
+
+  .dl-stability-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 0 18px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .dl-stability-header-actions .dl-popup-action {
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    height: auto;
+    padding: 8px 10px;
+    line-height: 1.35;
+    white-space: normal;
+    text-align: center;
   }
 
   .dl-summary-grid {
@@ -710,6 +761,17 @@ const styles = `
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.04);
+  }
+
+  .dl-stability-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dl-stability-summary-grid .dl-summary-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 76px;
   }
 
   .dl-summary-label {
@@ -731,19 +793,28 @@ const styles = `
     flex-direction: column;
     gap: 8px;
     padding: 14px 18px;
-    overflow: auto;
+  }
+
+  .dl-stability-panel .dl-session-list {
+    padding-top: 12px;
   }
 
   .dl-session-body {
     display: flex;
     flex-direction: column;
-    min-height: 260px;
-    max-height: calc(min(68vh, 640px) - 146px);
+    flex: 0 0 auto;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .dl-stability-panel-body {
+    padding-bottom: 10px;
   }
 
   .dl-session-section {
     display: flex;
     flex-direction: column;
+    min-height: 0;
   }
 
   .dl-session-section + .dl-session-section {
@@ -785,7 +856,104 @@ const styles = `
     flex-direction: column;
     gap: 10px;
     padding: 14px 18px 18px;
-    overflow: auto;
+  }
+
+  .dl-stability-panel .dl-session-detail {
+    padding-top: 12px;
+    padding-bottom: 22px;
+  }
+
+  .dl-settings-panel {
+    width: min(360px, calc(100vw - 32px));
+    max-height: min(62vh, 520px);
+  }
+
+  .dl-settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .dl-settings-row + .dl-settings-row {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .dl-settings-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .dl-settings-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .dl-settings-value {
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.58);
+    word-break: break-word;
+  }
+
+  .dl-settings-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #6b7280;
+    box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.14);
+    flex: 0 0 auto;
+  }
+
+  .dl-settings-indicator[data-status="connected"] {
+    background: #22c55e;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.16);
+  }
+
+  .dl-settings-indicator[data-status="disabled"] {
+    background: #ef4444;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.16);
+  }
+
+  .dl-settings-indicator[data-status="connecting"],
+  .dl-settings-indicator[data-status="reconnecting"] {
+    background: #f59e0b;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16);
+  }
+
+  .dl-session-panel,
+  .dl-state-panel {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  .dl-session-panel::-webkit-scrollbar,
+  .dl-state-panel::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .dl-session-panel::-webkit-scrollbar-track,
+  .dl-state-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dl-session-panel::-webkit-scrollbar-thumb,
+  .dl-state-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+
+  .dl-session-panel::-webkit-scrollbar-thumb:hover,
+  .dl-state-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.28);
+    background-clip: padding-box;
   }
 
   .dl-session-empty {
@@ -959,6 +1127,21 @@ const styles = `
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .dl-stability-panel .dl-detail-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dl-stability-panel .dl-detail-actions .dl-popup-action {
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    height: auto;
+    padding: 8px 10px;
+    line-height: 1.35;
+    white-space: normal;
   }
 
   .dl-section-note {
@@ -1165,6 +1348,7 @@ const styles = `
     align-items: center;
     justify-content: space-between;
     gap: 8px;
+    flex-wrap: wrap;
   }
 
   .dl-stability-form-actions-left,
@@ -1173,6 +1357,10 @@ const styles = `
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+  }
+
+  .dl-stability-panel .dl-stability-form-actions-right {
+    margin-left: auto;
   }
 
   .dl-stability-subgrid {
@@ -1283,6 +1471,35 @@ const styles = `
     .dl-stability-subgrid {
       grid-template-columns: 1fr;
     }
+
+    .dl-stability-summary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    .dl-session-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .dl-session-header-actions {
+      max-width: none;
+      justify-content: flex-start;
+    }
+
+    .dl-stability-header-actions {
+      grid-template-columns: 1fr;
+    }
+
+    .dl-stability-panel-header {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .dl-stability-panel .dl-detail-actions {
+      grid-template-columns: 1fr;
+    }
   }
 `;
 
@@ -1331,16 +1548,13 @@ function DevPilotApp({
   const [repairRequests, setRepairRequests] = useState<DevPilotRepairRequestRecord[]>([]);
   const [repairTargetId, setRepairTargetId] = useState<string | null>(null);
   const [repairState, setRepairState] = useState<"idle" | "requested" | "failed">("idle");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [autoObservationEnabled, setAutoObservationEnabled] = useState(() =>
     stabilityEnabled ? loadObservationEnabled(pathname) : false,
   );
   const scrollTick = useScrollTick();
   const openAnnotations = useMemo(
     () => annotations.filter((item) => isOpenDevPilotAnnotationStatus(item.status)),
-    [annotations],
-  );
-  const closedAnnotations = useMemo(
-    () => annotations.filter((item) => isClosedDevPilotAnnotationStatus(item.status)),
     [annotations],
   );
   const activeAnnotation = useMemo(
@@ -1382,6 +1596,7 @@ function DevPilotApp({
   } | null>(null);
   const suppressLauncherClickRef = useRef(false);
   const suppressSelectionClickRef = useRef(false);
+  const pendingDeletedAnnotationIdsRef = useRef<Set<string>>(new Set());
   const areaSelectionRef = useRef<{
     startX: number;
     startY: number;
@@ -1393,12 +1608,14 @@ function DevPilotApp({
     annotationsRef,
     currentSessionId,
     currentSessionIdRef,
+    sseStatus,
   } = useRemoteSessionSync({
     pathname,
     syncEndpoint,
     stabilityEnabled,
     annotations,
     stabilityItems,
+    pendingDeletedAnnotationIdsRef,
     setAnnotations,
     setStabilityItems,
     setRepairRequests,
@@ -1663,12 +1880,23 @@ function DevPilotApp({
         return;
       }
 
+      const selectionRect = toRect(rect);
+      const pointerReleasedInsideSelection = isPointInsideRect(
+        { x: event.clientX, y: event.clientY },
+        selectionRect,
+      );
+
+      if (!pointerReleasedInsideSelection) {
+        document.body.style.userSelect = "";
+        return;
+      }
+
       const detail = describeElement(element);
       setSelection({
         kind: "text",
         elementName: detail.elementName,
         elementPath: detail.elementPath,
-        rect: toRect(rect),
+        rect: selectionRect,
         pageX: rect.left + window.scrollX,
         pageY: rect.top + window.scrollY,
         matchCount: 1,
@@ -1881,10 +2109,7 @@ function DevPilotApp({
   const summary = useMemo(() => {
     return {
       open: openAnnotations.length,
-      pending: annotations.filter((item) => item.status === "pending").length,
       acknowledged: annotations.filter((item) => item.status === "acknowledged").length,
-      resolved: annotations.filter((item) => item.status === "resolved").length,
-      dismissed: annotations.filter((item) => item.status === "dismissed").length,
       total: annotations.length,
     };
   }, [annotations, openAnnotations]);
@@ -1904,10 +2129,61 @@ function DevPilotApp({
     [areaDraftRect],
   );
 
-  const markerStyle = (annotation: DevPilotAnnotation) => ({
-    left: Math.max(12, annotation.pageX - window.scrollX),
-    top: Math.max(12, annotation.pageY - window.scrollY - 14),
-  });
+  const resolveLiveAnnotationRect = (annotation: DevPilotAnnotation): DevPilotRect => {
+    if (annotation.kind !== "area") {
+      try {
+        const liveElement = document.querySelector(annotation.elementPath);
+        if (
+          liveElement instanceof HTMLElement &&
+          !liveElement.closest(`[${ROOT_ATTR}]`) &&
+          !liveElement.closest(`[${HOST_ATTR}]`)
+        ) {
+          const liveRect = toRect(liveElement.getBoundingClientRect());
+          if (liveRect.width > 0 && liveRect.height > 0) {
+            return liveRect;
+          }
+        }
+      } catch {
+        // Ignore selector resolution issues and fall back to stored coordinates.
+      }
+    }
+
+    return {
+      left: annotation.pageX - window.scrollX,
+      top: annotation.pageY - window.scrollY,
+      width: annotation.rect.width,
+      height: annotation.rect.height,
+    };
+  };
+
+  const annotationViewportRects = useMemo(
+    () =>
+      new Map(
+        annotations.map((annotation) => [annotation.id, resolveLiveAnnotationRect(annotation)]),
+      ),
+    [annotations, scrollTick],
+  );
+
+  const getMarkerAnchor = (
+    rect: DevPilotRect,
+    pageX: number,
+    pageY: number,
+  ): { left: number; top: number } => {
+    const anchoredLeft = rect.left + Math.min(Math.max(rect.width * 0.18, 12), 28);
+    const anchoredTop = rect.top - 14;
+
+    return {
+      left: Math.max(12, Number.isFinite(rect.left) ? anchoredLeft : pageX - window.scrollX),
+      top: Math.max(12, Number.isFinite(rect.top) ? anchoredTop : pageY - window.scrollY - 14),
+    };
+  };
+
+  const markerStyle = (annotation: DevPilotAnnotation) =>
+    getMarkerAnchor(
+      annotationViewportRects.get(annotation.id) || annotation.rect,
+      annotation.pageX,
+      annotation.pageY,
+    );
 
   const editAnnotation = (annotation: DevPilotAnnotation) => {
     setSelection({
@@ -1937,6 +2213,32 @@ function DevPilotApp({
     annotationId: string,
     nextStatus: DevPilotAnnotationStatus,
   ) => {
+    if (!isOpenDevPilotAnnotationStatus(nextStatus)) {
+      pendingDeletedAnnotationIdsRef.current.add(annotationId);
+      annotationsRef.current = annotationsRef.current.filter(
+        (item) => item.id !== annotationId,
+      );
+      setAnnotations((current) =>
+        current.filter((item) => item.id !== annotationId),
+      );
+      if (activeAnnotationId === annotationId) {
+        setActiveAnnotationId(null);
+      }
+      if (editingId === annotationId) {
+        setSelection(null);
+        setEditingId(null);
+        setDraft("");
+      }
+
+      if (syncEndpoint) {
+        deleteRemoteAnnotation(syncEndpoint, annotationId).catch((error) => {
+          pendingDeletedAnnotationIdsRef.current.delete(annotationId);
+          console.warn("[DevPilot] Failed to delete resolved annotation:", error);
+        });
+      }
+      return;
+    }
+
     const nextUpdatedAt = Date.now();
     setAnnotations((current) =>
       current.map((item) =>
@@ -1957,6 +2259,33 @@ function DevPilotApp({
         updatedAt: nextUpdatedAt,
       }).catch((error) => {
         console.warn("[DevPilot] Failed to update annotation status:", error);
+      });
+    }
+  };
+
+  const removeAnnotationRecord = (annotationId: string) => {
+    pendingDeletedAnnotationIdsRef.current.add(annotationId);
+    annotationsRef.current = annotationsRef.current.filter(
+      (item) => item.id !== annotationId,
+    );
+    setAnnotations((current) =>
+      current.filter((item) => item.id !== annotationId),
+    );
+
+    if (activeAnnotationId === annotationId) {
+      setActiveAnnotationId(null);
+    }
+
+    if (editingId === annotationId) {
+      setSelection(null);
+      setEditingId(null);
+      setDraft("");
+    }
+
+    if (syncEndpoint) {
+      deleteRemoteAnnotation(syncEndpoint, annotationId).catch((error) => {
+        pendingDeletedAnnotationIdsRef.current.delete(annotationId);
+        console.warn("[DevPilot] Failed to delete annotation:", error);
       });
     }
   };
@@ -2382,35 +2711,14 @@ function DevPilotApp({
       return;
     }
 
-    setAnnotations((current) => current.filter((item) => item.id !== editingId));
-    if (activeAnnotationId === editingId) {
-      setActiveAnnotationId(null);
-    }
-
-    if (syncEndpoint) {
-      deleteRemoteAnnotation(syncEndpoint, editingId).catch((error) => {
-        console.warn("[DevPilot] Failed to delete annotation:", error);
-      });
-    }
-
+    removeAnnotationRecord(editingId);
     setSelection(null);
     setEditingId(null);
     setDraft("");
   };
 
   const handleDeleteAnnotationRecord = (annotation: DevPilotAnnotation) => {
-    setAnnotations((current) =>
-      current.filter((item) => item.id !== annotation.id),
-    );
-    if (activeAnnotationId === annotation.id) {
-      setActiveAnnotationId(null);
-    }
-
-    if (syncEndpoint) {
-      deleteRemoteAnnotation(syncEndpoint, annotation.id).catch((error) => {
-        console.warn("[DevPilot] Failed to delete annotation:", error);
-      });
-    }
+    removeAnnotationRecord(annotation.id);
   };
 
   const handleDeleteStabilityItemRecord = (item: DevPilotStabilityItem) => {
@@ -2439,19 +2747,23 @@ function DevPilotApp({
   };
 
   const pendingMarkerStyle = selection
-    ? {
-        left: Math.max(12, selection.pageX - window.scrollX),
-        top: Math.max(12, selection.pageY - window.scrollY - 14),
-      }
+    ? getMarkerAnchor(selection.rect, selection.pageX, selection.pageY)
     : null;
   const popupPosition = selection ? ensurePopupPositionFromPoint(selection.pageX, selection.pageY, 320, 280) : null;
   const activeFocusAnnotation = !selection && isOpen && mode === "session" ? activeAnnotation : null;
+  const activeFocusRect =
+    activeFocusAnnotation &&
+    (annotationViewportRects.get(activeFocusAnnotation.id) || activeFocusAnnotation.rect);
   const togglePanelMode = (nextMode: DevPilotMode) => {
+    setIsSettingsOpen(false);
     if (nextMode === "stability" && !stabilityEnabled) {
       setMode("annotate");
       return;
     }
     setMode((current) => (current === nextMode ? "annotate" : nextMode));
+  };
+  const toggleSettingsPanel = () => {
+    setIsSettingsOpen((current) => !current);
   };
   const startDragging = (event: React.PointerEvent<HTMLElement>) => {
     const node = toolbarRef.current;
@@ -2476,10 +2788,6 @@ function DevPilotApp({
   };
   const toolbarRect = toolbarRef.current?.getBoundingClientRect();
   const panelWidth = 392;
-  const toolbarStatusLabel = syncEndpoint ? "协作" : "本地";
-  const toolbarStatusTitle = syncEndpoint
-    ? "当前已接入 MCP 协作模式"
-    : "当前为本地标注模式";
   const panelLeft = clampFloatingPosition(
     {
       left: (toolbarRect?.left || floatingPosition.left) + (toolbarRect?.width || 44) - panelWidth,
@@ -2558,18 +2866,18 @@ function DevPilotApp({
             className="dl-active-focus"
             data-kind={getAnnotationKind(activeFocusAnnotation)}
             style={{
-              left: activeFocusAnnotation.rect.left,
-              top: activeFocusAnnotation.rect.top,
-              width: activeFocusAnnotation.rect.width,
-              height: activeFocusAnnotation.rect.height,
+              left: activeFocusRect?.left,
+              top: activeFocusRect?.top,
+              width: activeFocusRect?.width,
+              height: activeFocusRect?.height,
             }}
           />
           <div
             className="dl-active-focus-label"
             data-kind={getAnnotationKind(activeFocusAnnotation)}
             style={{
-              left: Math.max(12, activeFocusAnnotation.rect.left),
-              top: Math.max(12, activeFocusAnnotation.rect.top - 32),
+              left: Math.max(12, activeFocusRect?.left || activeFocusAnnotation.rect.left),
+              top: Math.max(12, (activeFocusRect?.top || activeFocusAnnotation.rect.top) - 32),
             }}
           >
             {getAnnotationKind(activeFocusAnnotation) === "area"
@@ -2706,7 +3014,7 @@ function DevPilotApp({
         </div>
       ) : null}
 
-      {isOpen && mode === "session" ? (
+      {isOpen && !isSettingsOpen && mode === "session" ? (
         <SessionPanel
           panelLeft={panelLeft}
           panelBottom={panelBottom}
@@ -2714,7 +3022,6 @@ function DevPilotApp({
           summary={summary}
           annotations={annotations}
           openAnnotations={openAnnotations}
-          closedAnnotations={closedAnnotations}
           activeAnnotationId={activeAnnotationId}
           activeAnnotation={activeAnnotation}
           onCopy={() => {
@@ -2725,6 +3032,17 @@ function DevPilotApp({
           onOpenAnnotationEditor={openAnnotationEditor}
           onSetAnnotationStatus={setAnnotationStatus}
           onDeleteAnnotation={handleDeleteAnnotationRecord}
+        />
+      ) : null}
+
+      {isOpen && isSettingsOpen ? (
+        <SettingsPanel
+          panelLeft={panelLeft}
+          panelBottom={panelBottom}
+          syncEndpoint={syncEndpoint}
+          sessionId={currentSessionId}
+          sseStatus={sseStatus}
+          onClose={() => setIsSettingsOpen(false)}
         />
       ) : null}
 
@@ -2743,43 +3061,54 @@ function DevPilotApp({
           >
             <DevPilotGlyph />
           </span>
-          <span className="dl-toolbar-status" title={toolbarStatusTitle}>
-            <span className="dl-toolbar-status-dot" />
-            {toolbarStatusLabel}
-          </span>
           <button
             className="dl-toolbar-button"
-            data-active={mode === "annotate"}
-            onClick={() => setMode("annotate")}
+            data-active={!isSettingsOpen && mode === "annotate"}
+            onClick={() => {
+              setIsSettingsOpen(false);
+              setMode("annotate");
+            }}
           >
             <AnnotateIcon />
             <span className="dl-toolbar-label">标注</span>
             {summary.open > 0 ? <span className="dl-toolbar-count">{summary.open}</span> : null}
           </button>
           {stabilityEnabled ? (
-            <button
-              className="dl-toolbar-button"
-              data-active={mode === "stability"}
-              onClick={() => togglePanelMode("stability")}
-            >
-              <StabilityIcon />
-              <span className="dl-toolbar-label">稳定性</span>
-              {openStabilityItems.length > 0 ? <span className="dl-toolbar-count">{openStabilityItems.length}</span> : null}
+          <button
+            className="dl-toolbar-button"
+            data-active={!isSettingsOpen && mode === "stability"}
+            onClick={() => togglePanelMode("stability")}
+          >
+            <StabilityIcon />
+            <span className="dl-toolbar-label">稳定性</span>
+            {openStabilityItems.length > 0 ? <span className="dl-toolbar-count">{openStabilityItems.length}</span> : null}
             </button>
           ) : null}
           <button
             className="dl-toolbar-button"
-            data-active={mode === "session"}
+            data-active={!isSettingsOpen && mode === "session"}
             onClick={() => togglePanelMode("session")}
           >
             <SessionIcon />
             <span className="dl-toolbar-label">会话</span>
           </button>
+          <button
+            className="dl-toolbar-icon-button"
+            data-kind="secondary"
+            data-active={isSettingsOpen}
+            onClick={toggleSettingsPanel}
+            title="设置"
+          >
+            <SettingsIcon />
+          </button>
           <div className="dl-toolbar-divider" />
           <button
             className="dl-toolbar-icon-button"
             data-kind="secondary"
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              setIsSettingsOpen(false);
+              setIsOpen(false);
+            }}
             title="收起"
           >
             <CollapseIcon />
@@ -2807,7 +3136,7 @@ function DevPilotApp({
         </button>
       )}
 
-      {stabilityEnabled && isOpen && mode === "stability" ? (
+      {stabilityEnabled && isOpen && !isSettingsOpen && mode === "stability" ? (
         <StabilityPanel
           panelLeft={panelLeft}
           panelBottom={panelBottom}

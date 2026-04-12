@@ -1,4 +1,8 @@
-import type { DevPilotAnnotation, DevPilotAnnotationStatus } from "../types";
+import {
+  isOpenDevPilotAnnotationStatus,
+  type DevPilotAnnotation,
+  type DevPilotAnnotationStatus,
+} from "../types";
 
 export function getAnnotationStatusLabel(
   status: DevPilotAnnotationStatus,
@@ -32,17 +36,27 @@ export function mergeRemoteAnnotations(
   remoteAnnotations: DevPilotAnnotation[],
 ): DevPilotAnnotation[] {
   const merged = new Map<string, DevPilotAnnotation>();
+  const remoteById = new Map(remoteAnnotations.map((annotation) => [annotation.id, annotation]));
 
-  remoteAnnotations.forEach((annotation) => {
-    merged.set(annotation.id, annotation);
-  });
-
-  localAnnotations.forEach((annotation) => {
-    const remote = merged.get(annotation.id);
-    if (!remote || annotation.updatedAt > remote.updatedAt) {
+  remoteAnnotations
+    .filter((annotation) => isOpenDevPilotAnnotationStatus(annotation.status))
+    .forEach((annotation) => {
       merged.set(annotation.id, annotation);
-    }
-  });
+    });
+
+  localAnnotations
+    .filter((annotation) => isOpenDevPilotAnnotationStatus(annotation.status))
+    .forEach((annotation) => {
+      const remote = remoteById.get(annotation.id);
+      if (remote && !isOpenDevPilotAnnotationStatus(remote.status)) {
+        return;
+      }
+
+      const mergedRemote = merged.get(annotation.id);
+      if (!mergedRemote || annotation.updatedAt > mergedRemote.updatedAt) {
+        merged.set(annotation.id, annotation);
+      }
+    });
 
   return sortAnnotationsByUpdatedAt(Array.from(merged.values()));
 }

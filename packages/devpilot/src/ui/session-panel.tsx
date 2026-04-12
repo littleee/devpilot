@@ -7,7 +7,6 @@ import type {
   DevPilotAnnotation,
   DevPilotAnnotationStatus,
 } from "../types";
-import { isClosedDevPilotAnnotationStatus } from "../types";
 import { CollapseIcon } from "./icons";
 
 type CopyState = "idle" | "copied" | "failed";
@@ -15,8 +14,7 @@ type CopyState = "idle" | "copied" | "failed";
 interface AnnotationSummary {
   open: number;
   acknowledged: number;
-  resolved: number;
-  dismissed: number;
+  total: number;
 }
 
 interface SessionPanelProps {
@@ -26,7 +24,6 @@ interface SessionPanelProps {
   summary: AnnotationSummary;
   annotations: DevPilotAnnotation[];
   openAnnotations: DevPilotAnnotation[];
-  closedAnnotations: DevPilotAnnotation[];
   activeAnnotationId: string | null;
   activeAnnotation: DevPilotAnnotation | null;
   onCopy: () => void;
@@ -47,7 +44,6 @@ export function SessionPanel({
   summary,
   annotations,
   openAnnotations,
-  closedAnnotations,
   activeAnnotationId,
   activeAnnotation,
   onCopy,
@@ -109,12 +105,8 @@ export function SessionPanel({
           <span className="dl-summary-value">{summary.acknowledged}</span>
         </div>
         <div className="dl-summary-card">
-          <span className="dl-summary-label">已解决</span>
-          <span className="dl-summary-value">{summary.resolved}</span>
-        </div>
-        <div className="dl-summary-card">
-          <span className="dl-summary-label">已忽略</span>
-          <span className="dl-summary-value">{summary.dismissed}</span>
+          <span className="dl-summary-label">当前总数</span>
+          <span className="dl-summary-value">{summary.total}</span>
         </div>
       </div>
       <div className="dl-session-body">
@@ -128,7 +120,7 @@ export function SessionPanel({
               <div className="dl-session-empty">
                 {annotations.length === 0
                   ? "还没有本页标注。进入“标注模式”后点击页面元素，即可就地创建 annotation。"
-                  : "当前没有未完成标注。已解决和已忽略的项目会保留在下面的历史区。"}
+                  : "当前没有未完成标注。解决或忽略后的项目会直接从本页移除。"}
               </div>
             ) : (
               openAnnotations.map((annotation) => (
@@ -164,46 +156,6 @@ export function SessionPanel({
           </div>
         </div>
 
-        {closedAnnotations.length > 0 ? (
-          <div className="dl-session-section">
-            <div className="dl-session-section-header">
-              <h4 className="dl-session-section-title">已完成历史</h4>
-              <span className="dl-session-section-count">{closedAnnotations.length}</span>
-            </div>
-            <div className="dl-session-list">
-              {closedAnnotations.map((annotation) => (
-                <article
-                  key={annotation.id}
-                  className="dl-annotation-card"
-                  data-status={annotation.status}
-                  data-selected={annotation.id === activeAnnotationId}
-                  onClick={() => onSelectAnnotation(annotation.id)}
-                >
-                  <div className="dl-annotation-main">
-                    <div className="dl-annotation-top">
-                      <span className="dl-status-pill" data-status={annotation.status}>
-                        {getAnnotationStatusLabel(annotation.status)}
-                      </span>
-                    </div>
-                    <div className="dl-annotation-comment">{annotation.comment}</div>
-                    <div className="dl-annotation-meta">
-                      {annotation.elementName}
-                      <br />
-                      {annotation.elementPath}
-                    </div>
-                  </div>
-                  <div className="dl-annotation-side">
-                    <span className="dl-annotation-time">
-                      {formatTime(annotation.updatedAt)}
-                    </span>
-                    <span className="dl-annotation-chevron">›</span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
         <div className="dl-session-section">
           <div className="dl-session-section-header">
             <h4 className="dl-session-section-title">当前详情</h4>
@@ -217,10 +169,14 @@ export function SessionPanel({
                 <div className="dl-detail-card">
                   <h4 className="dl-detail-title">当前标注</h4>
                   <div className="dl-detail-body">{activeAnnotation.comment}</div>
-                  {activeAnnotation.selectedText ? (
-                    <div className="dl-detail-quote">
-                      {activeAnnotation.selectedText}
-                    </div>
+                  {getAnnotationKind(activeAnnotation) === "text" &&
+                  activeAnnotation.selectedText ? (
+                    <>
+                      <div className="dl-section-note">选中文本</div>
+                      <div className="dl-detail-quote">
+                        {activeAnnotation.selectedText}
+                      </div>
+                    </>
                   ) : null}
                 </div>
 
@@ -320,38 +276,24 @@ export function SessionPanel({
                         重新设为待处理
                       </button>
                     ) : null}
-                    {isClosedDevPilotAnnotationStatus(activeAnnotation.status) ? (
-                      <button
-                        className="dl-popup-action"
-                        data-kind="ghost"
-                        onClick={() =>
-                          onSetAnnotationStatus(activeAnnotation.id, "pending")
-                        }
-                      >
-                        重新打开
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          className="dl-popup-action"
-                          data-kind="primary"
-                          onClick={() =>
-                            onSetAnnotationStatus(activeAnnotation.id, "resolved")
-                          }
-                        >
-                          标记已解决
-                        </button>
-                        <button
-                          className="dl-popup-action"
-                          data-kind="danger"
-                          onClick={() =>
-                            onSetAnnotationStatus(activeAnnotation.id, "dismissed")
-                          }
-                        >
-                          忽略此项
-                        </button>
-                      </>
-                    )}
+                    <button
+                      className="dl-popup-action"
+                      data-kind="primary"
+                      onClick={() =>
+                        onSetAnnotationStatus(activeAnnotation.id, "resolved")
+                      }
+                    >
+                      解决并移除
+                    </button>
+                    <button
+                      className="dl-popup-action"
+                      data-kind="danger"
+                      onClick={() =>
+                        onSetAnnotationStatus(activeAnnotation.id, "dismissed")
+                      }
+                    >
+                      忽略并移除
+                    </button>
                     <button
                       className="dl-popup-action"
                       data-kind="danger"

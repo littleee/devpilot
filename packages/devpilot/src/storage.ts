@@ -1,5 +1,6 @@
 import {
   isDevPilotAnnotationStatus,
+  isOpenDevPilotAnnotationStatus,
   type DevPilotAnnotation,
   type DevPilotAnnotationStatus,
   isDevPilotStabilitySeverity,
@@ -84,7 +85,11 @@ export function loadAnnotations(pathname: string): DevPilotAnnotation[] {
       return [];
     }
     const parsed = JSON.parse(raw) as DevPilotAnnotation[];
-    return Array.isArray(parsed) ? parsed.map(normalizeAnnotation) : [];
+    return Array.isArray(parsed)
+      ? parsed
+          .map(normalizeAnnotation)
+          .filter((annotation) => isOpenDevPilotAnnotationStatus(annotation.status))
+      : [];
   } catch {
     return [];
   }
@@ -96,7 +101,14 @@ export function saveAnnotations(pathname: string, annotations: DevPilotAnnotatio
   }
 
   try {
-    window.localStorage.setItem(getAnnotationKey(pathname), JSON.stringify(annotations));
+    window.localStorage.setItem(
+      getAnnotationKey(pathname),
+      JSON.stringify(
+        annotations.filter((annotation) =>
+          isOpenDevPilotAnnotationStatus(annotation.status),
+        ),
+      ),
+    );
   } catch {
     // Ignore localStorage failures.
   }

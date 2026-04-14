@@ -14,6 +14,9 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm run build && node --test tests/*.test.mjs",
     "check": "npm run check --workspaces --if-present",
+    "lint": "eslint packages/devpilot/src --ext .ts,.tsx",
+    "format": "prettier --write \"packages/devpilot/src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"packages/devpilot/src/**/*.{ts,tsx}\"",
     "demo:claude:mcp:web": "npm --prefix examples/claude-mcp-demo run dev -- --host 127.0.0.1 --port 4175",
     "demo:claude:mcp:web:build": "npm --prefix examples/claude-mcp-demo run build",
     "demo:claude:mcp:bridge": "node packages/devpilot-mcp/dist/index.js server --port 5213",
@@ -28,6 +31,12 @@
     "@types/node": "^20.1.1",
     "@types/react": "^18.2.6",
     "@types/react-dom": "^18.2.4",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "prettier": "^3.8.2",
     "typescript": "^5.1.3"
   }
 }

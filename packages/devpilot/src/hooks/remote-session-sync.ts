@@ -44,6 +44,8 @@ type UseRemoteSessionSyncArgs = {
   setAnnotations: Dispatch<SetStateAction<DevPilotAnnotation[]>>;
   setStabilityItems: Dispatch<SetStateAction<DevPilotStabilityItem[]>>;
   setRepairRequests: Dispatch<SetStateAction<DevPilotRepairRequestRecord[]>>;
+  annotationsRef?: MutableRefObject<DevPilotAnnotation[]>;
+  currentSessionIdRef?: MutableRefObject<string | null>;
 };
 
 type UseRemoteSessionSyncResult = {
@@ -67,6 +69,8 @@ export function useRemoteSessionSync({
   setAnnotations,
   setStabilityItems,
   setRepairRequests,
+  annotationsRef: externalAnnotationsRef,
+  currentSessionIdRef: externalCurrentSessionIdRef,
 }: UseRemoteSessionSyncArgs): UseRemoteSessionSyncResult {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(() =>
     loadSessionId(pathname),
@@ -74,9 +78,11 @@ export function useRemoteSessionSync({
   const [sseStatus, setSseStatus] = useState<
     "disabled" | "connecting" | "connected" | "reconnecting"
   >(syncEndpoint ? "connecting" : "disabled");
-  const annotationsRef = useRef<DevPilotAnnotation[]>(annotations);
+  const internalAnnotationsRef = useRef<DevPilotAnnotation[]>(annotations);
+  const annotationsRef = externalAnnotationsRef || internalAnnotationsRef;
   const stabilityItemsRef = useRef<DevPilotStabilityItem[]>(stabilityItems);
-  const currentSessionIdRef = useRef<string | null>(currentSessionId);
+  const internalCurrentSessionIdRef = useRef<string | null>(currentSessionId);
+  const currentSessionIdRef = externalCurrentSessionIdRef || internalCurrentSessionIdRef;
 
   useEffect(() => {
     annotationsRef.current = annotations;

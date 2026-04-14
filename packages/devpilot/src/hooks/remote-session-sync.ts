@@ -149,9 +149,7 @@ export function useRemoteSessionSync({
     ) => {
       const deletedAnnotationIds = pendingDeletedAnnotationIdsRef.current;
       const visibleRemoteAnnotations = remoteSession.annotations.filter(
-        (annotation) =>
-          isOpenDevPilotAnnotationStatus(annotation.status) &&
-          !deletedAnnotationIds.has(annotation.id),
+        (annotation) => !deletedAnnotationIds.has(annotation.id),
       );
 
       for (const deletedAnnotationId of Array.from(deletedAnnotationIds)) {

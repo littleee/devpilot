@@ -38,25 +38,26 @@ export function mergeRemoteAnnotations(
   const merged = new Map<string, DevPilotAnnotation>();
   const remoteById = new Map(remoteAnnotations.map((annotation) => [annotation.id, annotation]));
 
-  remoteAnnotations
-    .filter((annotation) => isOpenDevPilotAnnotationStatus(annotation.status))
-    .forEach((annotation) => {
-      merged.set(annotation.id, annotation);
-    });
+  // Prefer remote versions so status changes (e.g. resolved) are reflected.
+  remoteAnnotations.forEach((annotation) => {
+    merged.set(annotation.id, annotation);
+  });
 
+  // Keep local-only open annotations, or local annotations that are newer than remote.
   localAnnotations
     .filter((annotation) => isOpenDevPilotAnnotationStatus(annotation.status))
     .forEach((annotation) => {
       const remote = remoteById.get(annotation.id);
-      if (remote && !isOpenDevPilotAnnotationStatus(remote.status)) {
-        return;
-      }
-
-      const mergedRemote = merged.get(annotation.id);
-      if (!mergedRemote || annotation.updatedAt > mergedRemote.updatedAt) {
+      if (!remote) {
+        merged.set(annotation.id, annotation);
+      } else if (annotation.updatedAt > remote.updatedAt) {
         merged.set(annotation.id, annotation);
       }
     });
 
-  return sortAnnotationsByUpdatedAt(Array.from(merged.values()));
+  return sortAnnotationsByUpdatedAt(
+    Array.from(merged.values()).filter((annotation) =>
+      isOpenDevPilotAnnotationStatus(annotation.status),
+    ),
+  );
 }

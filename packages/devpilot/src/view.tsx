@@ -613,7 +613,7 @@ function DevPilotApp({
             <DevPilotGlyph />
           </span>
           <button
-            className="dl-toolbar-button"
+            className="dl-toolbar-icon-button"
             data-active={!isSettingsOpen && mode === "annotate"}
             onClick={() => {
               setIsSettingsOpen(false);
@@ -627,7 +627,7 @@ function DevPilotApp({
           </button>
           {stabilityEnabled ? (
             <button
-              className="dl-toolbar-button"
+              className="dl-toolbar-icon-button"
               data-active={!isSettingsOpen && mode === "stability"}
               onClick={() => togglePanelMode("stability")}
             >
@@ -640,7 +640,7 @@ function DevPilotApp({
             </button>
           ) : null}
           <button
-            className="dl-toolbar-button"
+            className="dl-toolbar-icon-button"
             data-active={!isSettingsOpen && mode === "session"}
             onClick={() => togglePanelMode("session")}
           >

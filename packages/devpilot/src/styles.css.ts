@@ -159,6 +159,9 @@ export const styles = `
   }
 
   .dl-toolbar-count {
+    position: absolute;
+    top: -2px;
+    right: -2px;
     min-width: 16px;
     height: 16px;
     padding: 0 5px;
@@ -195,7 +198,7 @@ export const styles = `
     color: rgba(255, 255, 255, 0.72);
     cursor: pointer;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     transition:
       background 120ms ease,
       color 120ms ease,

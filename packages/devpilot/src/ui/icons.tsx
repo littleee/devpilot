@@ -102,35 +102,11 @@ export function SettingsIcon() {
   return (
     <svg viewBox="0 0 16 16" aria-hidden="true" className="dl-toolbar-icon">
       <path
-        d="M2.5 4.2h4.2M9.6 4.2h3.9M2.5 8h7.1M12.5 8h1M2.5 11.8h1.8M8.1 11.8h5.4"
+        d="M8.9 1.1h-1.8a.6.6 0 0 0-.6.6v.7a5 5 0 0 0-1.3.5l-.5-.5a.6.6 0 0 0-.8 0l-1.3 1.3a.6.6 0 0 0 0 .8l.5.5a5 5 0 0 0-.5 1.3h-.7a.6.6 0 0 0-.6.6v1.8a.6.6 0 0 0 .6.6h.7a5 5 0 0 0 .5 1.3l-.5.5a.6.6 0 0 0 0 .8l1.3 1.3a.6.6 0 0 0 .8 0l.5-.5a5 5 0 0 0 1.3.5v.7a.6.6 0 0 0 .6.6h1.8a.6.6 0 0 0 .6-.6v-.7a5 5 0 0 0 1.3-.5l.5.5a.6.6 0 0 0 .8 0l1.3-1.3a.6.6 0 0 0 0-.8l-.5-.5a5 5 0 0 0 .5-1.3h.7a.6.6 0 0 0 .6-.6V4.4a.6.6 0 0 0-.6-.6h-.7a5 5 0 0 0-.5-1.3l.5-.5a.6.6 0 0 0 0-.8L12.4 1a.6.6 0 0 0-.8 0l-.5.5a5 5 0 0 0-1.3-.5v-.7a.6.6 0 0 0-.6-.6zM8 10.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-      <circle
-        cx="8.1"
-        cy="4.2"
-        r="1.7"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <circle
-        cx="10.8"
-        cy="8"
-        r="1.7"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <circle
-        cx="5.8"
-        cy="11.8"
-        r="1.7"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
       />
     </svg>
   );

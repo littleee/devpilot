@@ -249,6 +249,24 @@ function DevPilotApp({
     [areaSelection.areaDraftRect],
   );
 
+  const annotationMarkerNumbers = useMemo(() => {
+    const orderedByCreation = [...annotationsHook.openAnnotations].sort((a, b) => {
+      if (a.createdAt !== b.createdAt) {
+        return a.createdAt - b.createdAt;
+      }
+
+      if (a.updatedAt !== b.updatedAt) {
+        return a.updatedAt - b.updatedAt;
+      }
+
+      return a.id.localeCompare(b.id);
+    });
+
+    return new Map(
+      orderedByCreation.map((annotation, index) => [annotation.id, index + 1]),
+    );
+  }, [annotationsHook.openAnnotations]);
+
   const activeFocusAnnotation =
     !annotationsHook.selection && isOpen && mode === "session"
       ? annotationsHook.activeAnnotation
@@ -375,7 +393,7 @@ function DevPilotApp({
         </>
       ) : null}
 
-      {annotationsHook.openAnnotations.map((annotation, index) => (
+      {annotationsHook.openAnnotations.map((annotation) => (
         <button
           key={annotation.id}
           className="dl-marker"
@@ -407,11 +425,11 @@ function DevPilotApp({
                 />
               </svg>
               <span className="dl-marker-label">
-                {annotation.matchCount || annotation.relatedElements?.length || index + 1}
+                {annotationMarkerNumbers.get(annotation.id) || 1}
               </span>
             </>
           ) : (
-            index + 1
+            annotationMarkerNumbers.get(annotation.id) || 1
           )}
         </button>
       ))}

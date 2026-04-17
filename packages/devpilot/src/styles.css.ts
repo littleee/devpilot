@@ -69,16 +69,16 @@ export const styles = `
     position: absolute;
     top: -3px;
     right: -3px;
-    min-width: 18px;
-    height: 18px;
+    min-width: 16px;
+    height: 16px;
     padding: 0 5px;
-    border-radius: 999px;
+    border-radius: 50%;
     background: #3b82f6;
     color: #ffffff;
     font-size: 10px;
     font-weight: 800;
-    line-height: 18px;
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.92);
+    line-height: 16px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
   }
 
   .dl-toolbar-divider {
@@ -332,16 +332,18 @@ export const styles = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 8px;
-    border: 2px solid #ffffff;
-    border-radius: 10px;
+    min-width: 16px;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
     background: #2563eb;
     color: #ffffff;
-    font-size: 12px;
-    font-weight: 700;
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.28);
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 16px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
     cursor: pointer;
     pointer-events: auto;
     transition:
@@ -354,56 +356,50 @@ export const styles = `
 
   .dl-marker[data-status="resolved"] {
     background: #10b981;
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.28);
   }
 
   .dl-marker[data-status="acknowledged"] {
     background: #d97706;
-    box-shadow: 0 8px 20px rgba(217, 119, 6, 0.28);
   }
 
   .dl-marker[data-kind="area"] {
-    min-width: 34px;
-    height: 28px;
-    gap: 6px;
-    padding: 0 10px;
+    min-width: 16px;
+    height: 16px;
+    gap: 4px;
+    padding: 0 4px;
     border-radius: 10px;
   }
 
   .dl-marker[data-pending="true"] {
     background: #16a34a;
-    box-shadow:
-      0 0 0 4px rgba(34, 197, 94, 0.18),
-      0 10px 24px rgba(22, 163, 74, 0.28);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
     animation: dl-marker-enter 140ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .dl-marker[data-pending="true"][data-kind="element"],
   .dl-marker[data-pending="true"][data-kind="text"] {
-    min-width: 28px;
-    width: 28px;
-    height: 28px;
+    min-width: 16px;
+    width: 16px;
+    height: 16px;
     padding: 0;
-    font-size: 18px;
-    line-height: 1;
+    font-size: 10px;
+    line-height: 16px;
   }
 
   .dl-marker-icon {
-    width: 12px;
-    height: 12px;
+    width: 8px;
+    height: 8px;
     color: currentColor;
     flex: 0 0 auto;
   }
 
   .dl-marker-label {
-    line-height: 1;
+    line-height: 16px;
   }
 
   .dl-marker[data-active="true"] {
     transform: scale(1.08);
-    box-shadow:
-      0 0 0 4px rgba(37, 99, 235, 0.18),
-      0 10px 24px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
   }
 
   .dl-marker:hover {

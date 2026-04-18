@@ -1,10 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { sortAnnotationsByUpdatedAt } from "../annotation/state";
 import {
-  createDevPilotExportPayload,
-  formatDevPilotExportMarkdown,
-} from "../output";
-import {
   copyTextToClipboard,
   createId,
   ensurePopupPositionFromPoint,
@@ -76,7 +72,7 @@ export function useAnnotations(options: UseAnnotationsOptions) {
 
     const timeoutId = window.setTimeout(() => {
       setCopyState("idle");
-    }, 1800);
+    }, 3000);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -246,23 +242,7 @@ export function useAnnotations(options: UseAnnotationsOptions) {
     }
   };
 
-  const handleCopyAnnotations = async () => {
-    const payload = createDevPilotExportPayload({
-      annotations: openAnnotations,
-      pathname,
-      title: document.title || "Untitled Page",
-      url: window.location.href,
-      viewport: {
-        width: window.innerWidth,
-        height: window.innerHeight,
-      },
-    });
-    const text = formatDevPilotExportMarkdown(payload);
-    const didCopy = await copyTextToClipboard(text);
-    setCopyState(didCopy ? "copied" : "failed");
-  };
-
-  const handleCopyTaskPacket = async () => {
+  const buildAnnotationTaskPacketText = async () => {
     const { createDevPilotTaskPacket, formatDevPilotTaskPacketMarkdown } = await import("../task-packet");
     const packet = createDevPilotTaskPacket({
       type: "annotation",
@@ -277,8 +257,28 @@ export function useAnnotations(options: UseAnnotationsOptions) {
         width: window.innerWidth,
         height: window.innerHeight,
       },
+      platform: window.navigator?.platform,
+      language: window.navigator?.language,
+      screen:
+        window.screen
+          ? {
+              width: window.screen.width,
+              height: window.screen.height,
+            }
+          : undefined,
+      referrer: document.referrer || undefined,
     });
-    const text = formatDevPilotTaskPacketMarkdown(packet);
+    return formatDevPilotTaskPacketMarkdown(packet);
+  };
+
+  const handleCopyAnnotations = async () => {
+    const text = await buildAnnotationTaskPacketText();
+    const didCopy = await copyTextToClipboard(text);
+    setCopyState(didCopy ? "copied" : "failed");
+  };
+
+  const handleCopyTaskPacket = async () => {
+    const text = await buildAnnotationTaskPacketText();
     const didCopy = await copyTextToClipboard(text);
     setCopyState(didCopy ? "copied" : "failed");
   };

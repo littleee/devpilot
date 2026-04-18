@@ -179,8 +179,8 @@ export const styles = `
   }
 
   .dl-toolbar-icon {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     flex: 0 0 auto;
   }
 
@@ -226,6 +226,10 @@ export const styles = `
     border-radius: 17px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
     pointer-events: none;
+  }
+
+  .dl-toolbar-icon-button[data-copied="true"] {
+    color: #4ade80;
   }
 
   .dl-highlight {

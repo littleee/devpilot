@@ -20,14 +20,14 @@ import {
 import { loadFloatingPosition, saveFloatingPosition } from "./storage";
 import {
   AnnotateIcon,
+  CheckIcon,
   CollapseIcon,
+  CopyIcon,
   DevPilotGlyph,
   SettingsIcon,
-  SessionIcon,
   StabilityIcon,
 } from "./ui/icons";
 import { SettingsPanel } from "./ui/settings-panel";
-import { SessionPanel } from "./ui/session-panel";
 import { StabilityPanel } from "./ui/stability-panel";
 import type {
   DevPilotAnnotation,
@@ -150,9 +150,6 @@ function DevPilotApp({
   } = annotationsHook;
 
   useEffect(() => {
-    if (mode !== "session") {
-      return;
-    }
     const preferredAnnotations =
       hookOpenAnnotations.length > 0 ? hookOpenAnnotations : hookAnnotations;
     if (preferredAnnotations.length === 0) {
@@ -172,7 +169,6 @@ function DevPilotApp({
     hookAnnotations,
     hookOpenAnnotations,
     hookSetActiveAnnotationId,
-    mode,
   ]);
 
   useEffect(() => {
@@ -281,13 +277,8 @@ function DevPilotApp({
     );
   }, [annotationsHook.openAnnotations]);
 
-  const activeFocusAnnotation =
-    !annotationsHook.selection && isOpen && mode === "session"
-      ? annotationsHook.activeAnnotation
-      : null;
-  const activeFocusRect =
-    activeFocusAnnotation &&
-    (annotationViewportRects.get(activeFocusAnnotation.id) || activeFocusAnnotation.rect);
+  const activeFocusAnnotation = null;
+  const activeFocusRect = null;
 
   const togglePanelMode = (nextMode: DevPilotMode) => {
     setIsSettingsOpen(false);
@@ -389,43 +380,12 @@ function DevPilotApp({
         />
       ) : null}
 
-      {activeFocusAnnotation ? (
-        <>
-          <div
-            className="dl-active-focus"
-            data-kind={getAnnotationKind(activeFocusAnnotation)}
-            style={{
-              left: activeFocusRect?.left,
-              top: activeFocusRect?.top,
-              width: activeFocusRect?.width,
-              height: activeFocusRect?.height,
-            }}
-          />
-          <div
-            className="dl-active-focus-label"
-            data-kind={getAnnotationKind(activeFocusAnnotation)}
-            style={{
-              left: Math.max(12, activeFocusRect?.left || activeFocusAnnotation.rect.left),
-              top: Math.max(
-                12,
-                (activeFocusRect?.top || activeFocusAnnotation.rect.top) - 32,
-              ),
-            }}
-          >
-            {getAnnotationKind(activeFocusAnnotation) === "area"
-              ? `${activeFocusAnnotation.matchCount || activeFocusAnnotation.relatedElements?.length || 0} 个元素`
-              : activeFocusAnnotation.elementName}
-          </div>
-        </>
-      ) : null}
-
       {annotationsHook.openAnnotations.map((annotation) => (
         <button
           key={annotation.id}
           className="dl-marker"
           data-kind={getAnnotationKind(annotation)}
           data-status={annotation.status}
-          data-active={annotation.id === annotationsHook.activeAnnotationId && mode === "session"}
           style={markerStyle(annotation)}
           onClick={() => annotationsHook.openAnnotationEditor(annotation)}
           title={annotation.comment}
@@ -605,27 +565,6 @@ function DevPilotApp({
         </div>
       ) : null}
 
-      {isOpen && !isSettingsOpen && mode === "session" ? (
-        <SessionPanel
-          panelLeft={panelLeft}
-          panelBottom={panelBottom}
-          copyState={annotationsHook.copyState}
-          summary={annotationsHook.summary}
-          annotations={annotationsHook.annotations}
-          openAnnotations={annotationsHook.openAnnotations}
-          activeAnnotationId={annotationsHook.activeAnnotationId}
-          activeAnnotation={annotationsHook.activeAnnotation}
-          onCopy={() => {
-            void annotationsHook.handleCopyAnnotations();
-          }}
-          onClose={() => setMode("annotate")}
-          onSelectAnnotation={annotationsHook.setActiveAnnotationId}
-          onOpenAnnotationEditor={annotationsHook.openAnnotationEditor}
-          onSetAnnotationStatus={annotationsHook.setAnnotationStatus}
-          onDeleteAnnotation={annotationsHook.handleDeleteAnnotationRecord}
-        />
-      ) : null}
-
       {isOpen && isSettingsOpen ? (
         <SettingsPanel
           panelLeft={panelLeft}
@@ -685,10 +624,14 @@ function DevPilotApp({
           ) : null}
           <button
             className="dl-toolbar-icon-button"
-            data-active={!isSettingsOpen && mode === "session"}
-            onClick={() => togglePanelMode("session")}
+            data-kind="secondary"
+            data-copied={annotationsHook.copyState === "copied"}
+            onClick={() => {
+              void annotationsHook.handleCopyTaskPacket();
+            }}
+            title={annotationsHook.copyState === "copied" ? "已复制" : "复制给 AI"}
           >
-            <SessionIcon />
+            {annotationsHook.copyState === "copied" ? <CheckIcon /> : <CopyIcon />}
           </button>
           <button
             className="dl-toolbar-icon-button"

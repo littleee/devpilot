@@ -3,7 +3,7 @@ import type {
   DevPilotRepairRequest,
 } from "./repair";
 
-export type DevPilotMode = "annotate" | "stability" | "session";
+export type DevPilotMode = "annotate" | "stability";
 
 export type DevPilotSelectionKind = "element" | "text" | "area";
 

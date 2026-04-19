@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DevPilot Getting Started</title>
-    <link rel="stylesheet" href="./assets/styles.css?v=20260419-9" />
+    <link rel="stylesheet" href="./assets/styles.css?v=20260419-10" />
   </head>
   <body>
     <header class="site-header">
@@ -24,10 +24,20 @@
           <a href="https://github.com/littleee/devpilot">GitHub</a>
         </nav>
         <div class="language-switch">
-          <select id="lang-select" class="lang-select" aria-label="Language switch">
-            <option value="en">English</option>
-            <option value="zh">中文</option>
-          </select>
+          <button id="lang-trigger" class="lang-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+            <span id="lang-current">English</span>
+            <svg class="lang-chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div id="lang-menu" class="lang-menu" role="menu">
+            <button class="lang-option" data-lang="en" role="menuitem">
+              <span class="lang-label">English</span>
+              <svg class="lang-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="lang-option" data-lang="zh" role="menuitem">
+              <span class="lang-label">中文</span>
+              <svg class="lang-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     </header>
@@ -103,6 +113,6 @@ mountDevPilot({
       </div>
     </footer>
 
-    <script src="./assets/app.js?v=20260419-6"></script>
+    <script src="./assets/app.js?v=20260419-7"></script>
   </body>
 </html>

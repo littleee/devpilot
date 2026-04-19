@@ -413,6 +413,8 @@ const messages = {
   },
 };
 
+const langLabels = { en: "English", zh: "中文" };
+
 function applyLanguage(language) {
   const dictionary = messages[language] ?? messages.en;
   document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
@@ -425,14 +427,49 @@ function applyLanguage(language) {
     }
   });
 
-  const select = document.getElementById("lang-select");
-  if (select) select.value = language;
+  const current = document.getElementById("lang-current");
+  if (current) current.textContent = langLabels[language] ?? "English";
+
+  document.querySelectorAll(".lang-option").forEach((btn) => {
+    btn.classList.toggle("is-selected", btn.dataset.lang === language);
+  });
+
   localStorage.setItem("devpilot-docs-lang", language);
 }
 
-document.getElementById("lang-select")?.addEventListener("change", (e) => {
-  applyLanguage(e.target.value);
-});
+function setupLanguageSwitch() {
+  const trigger = document.getElementById("lang-trigger");
+  const menu = document.getElementById("lang-menu");
+  if (!trigger || !menu) return;
+
+  function toggleMenu(open) {
+    const isOpen = open ?? !menu.classList.contains("is-open");
+    menu.classList.toggle("is-open", isOpen);
+    trigger.setAttribute("aria-expanded", String(isOpen));
+  }
+
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleMenu();
+  });
+
+  menu.querySelectorAll(".lang-option").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const lang = btn.dataset.lang;
+      if (lang) applyLanguage(lang);
+      toggleMenu(false);
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!trigger.contains(e.target) && !menu.contains(e.target)) {
+      toggleMenu(false);
+    }
+  });
+}
+
+setupLanguageSwitch();
 
 const browserLanguage = navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
 const initialLanguage = localStorage.getItem("devpilot-docs-lang") || browserLanguage;

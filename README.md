@@ -172,4 +172,4 @@ Current workspace contents:
 
 ## License
 
-MIT. See [LICENSE](/Users/littleee/project/stability-copilot-platform/LICENSE).
+MIT. See [LICENSE](/LICENSE).

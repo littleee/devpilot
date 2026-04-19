@@ -8,7 +8,7 @@
       name="description"
       content="DevPilot documentation: browser annotations, AI handoff, Stability Copilot, and MCP setup."
     />
-    <link rel="stylesheet" href="./assets/styles.css?v=20260419-8" />
+    <link rel="stylesheet" href="./assets/styles.css?v=20260419-9" />
   </head>
   <body>
     <header class="site-header">
@@ -27,9 +27,11 @@
           <a href="./mcp.html" data-i18n="nav.mcp">MCP Setup</a>
           <a href="https://github.com/littleee/devpilot">GitHub</a>
         </nav>
-        <div class="language-switch" role="group" aria-label="Language switch">
-          <button id="lang-zh" class="lang-button" type="button">中文</button>
-          <button id="lang-en" class="lang-button active" type="button">English</button>
+        <div class="language-switch">
+          <select id="lang-select" class="lang-select" aria-label="Language switch">
+            <option value="en">English</option>
+            <option value="zh">中文</option>
+          </select>
         </div>
       </div>
     </header>
@@ -414,6 +416,6 @@
       </div>
     </footer>
 
-    <script src="./assets/app.js?v=20260419-5"></script>
+    <script src="./assets/app.js?v=20260419-6"></script>
   </body>
 </html>

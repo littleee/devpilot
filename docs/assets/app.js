@@ -425,13 +425,14 @@ function applyLanguage(language) {
     }
   });
 
-  document.getElementById("lang-zh")?.classList.toggle("active", language === "zh");
-  document.getElementById("lang-en")?.classList.toggle("active", language === "en");
+  const select = document.getElementById("lang-select");
+  if (select) select.value = language;
   localStorage.setItem("devpilot-docs-lang", language);
 }
 
-document.getElementById("lang-zh")?.addEventListener("click", () => applyLanguage("zh"));
-document.getElementById("lang-en")?.addEventListener("click", () => applyLanguage("en"));
+document.getElementById("lang-select")?.addEventListener("change", (e) => {
+  applyLanguage(e.target.value);
+});
 
 const browserLanguage = navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
 const initialLanguage = localStorage.getItem("devpilot-docs-lang") || browserLanguage;

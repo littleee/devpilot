@@ -219,7 +219,10 @@ h1 {
 .feature-grid,
 .package-grid,
 .steps,
-.doc-links {
+.doc-links,
+.compare-grid,
+.audience-grid,
+.faq-list {
   display: grid;
   gap: 20px;
 }
@@ -240,10 +243,22 @@ h1 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.compare-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.audience-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .feature-card,
 .package-card,
 .step-card,
-.doc-card {
+.doc-card,
+.compare-card,
+.audience-card,
+.cta-card,
+.faq-item {
   padding: 22px;
   border-radius: 24px;
   border: 1px solid var(--panel-border);
@@ -254,7 +269,9 @@ h1 {
 .feature-card h3,
 .package-card h3,
 .step-card h3,
-.doc-card h3 {
+.doc-card h3,
+.compare-card h3,
+.audience-card h3 {
   margin: 0 0 12px;
   font-size: 24px;
 }
@@ -262,10 +279,31 @@ h1 {
 .feature-card p,
 .package-card p,
 .step-card p,
-.doc-card p {
+.doc-card p,
+.compare-card p,
+.audience-card p,
+.cta-card p,
+.faq-item p {
   margin: 0;
   color: var(--muted);
   line-height: 1.7;
+}
+
+.compare-card.accent {
+  background:
+    linear-gradient(180deg, rgba(83, 182, 255, 0.12), rgba(83, 182, 255, 0.04)),
+    var(--panel);
+}
+
+.plain-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.plain-list li + li {
+  margin-top: 6px;
 }
 
 .step-index {
@@ -287,6 +325,42 @@ h1 {
 
 .doc-card:hover {
   transform: translateY(-2px);
+}
+
+.faq-list {
+  grid-template-columns: 1fr;
+}
+
+.faq-item {
+  padding: 0;
+  overflow: hidden;
+}
+
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 20px 22px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item[open] summary {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.faq-item p {
+  padding: 18px 22px 22px;
+}
+
+.cta-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
 }
 
 .doc-page {
@@ -444,7 +518,9 @@ pre {
   .feature-grid,
   .package-grid,
   .steps,
-  .doc-links {
+  .doc-links,
+  .compare-grid,
+  .audience-grid {
     grid-template-columns: 1fr;
   }
 
@@ -456,5 +532,10 @@ pre {
 
   .two-up {
     grid-template-columns: 1fr;
+  }
+
+  .cta-card {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

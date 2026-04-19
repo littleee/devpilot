@@ -40,6 +40,31 @@ const messages = {
       "The browser package. Use it when you want page-native annotations, task packet export, and the local AI handoff workflow.",
     "packages.mcpBody":
       "The local bridge and MCP server. Use it when you want connected mode, SSE sync, stability persistence, and agent-side workflows.",
+    "compare.eyebrow": "Compare modes",
+    "compare.title": "Start local. Add connected mode when the workflow grows.",
+    "compare.body":
+      "DevPilot is intentionally progressive. The browser package already works on its own. MCP comes in when you want synchronized sessions, stability workflows, and AI repair orchestration.",
+    "compare.localTitle": "Local mode",
+    "compare.local1": "Element, text, and area annotations",
+    "compare.local2": "Copy AI-ready task packets",
+    "compare.local3": "Works immediately in a single page",
+    "compare.local4": "Best for solo debugging and quick handoff",
+    "compare.connectedTitle": "Connected mode",
+    "compare.connected1": "Session sync and SSE updates",
+    "compare.connected2": "Stability persistence and repair requests",
+    "compare.connected3": "Claude / Codex / MCP agent workflows",
+    "compare.connected4": "Best for repeatable browser-to-code flows",
+    "audience.eyebrow": "Who it's for",
+    "audience.title": "Built for teams that already live in the browser and code editor.",
+    "audience.devTitle": "Frontend engineers",
+    "audience.devBody":
+      "Annotate a bug where it appears, then hand a concrete task packet to your coding assistant instead of rewriting page context by hand.",
+    "audience.qaTitle": "QA, product, and design",
+    "audience.qaBody":
+      "Capture exactly which page area is wrong, then pass a cleaner issue description to the implementation team or AI workflow.",
+    "audience.aiTitle": "AI-first workflows",
+    "audience.aiBody":
+      "Use DevPilot as the browser-side entry point, then connect MCP when you want synchronized sessions and repair orchestration.",
     "workflow.eyebrow": "Workflow",
     "workflow.title": "Typical flow",
     "workflow.step1Title": "Annotate the page",
@@ -62,6 +87,26 @@ const messages = {
     "docs.releaseTitle": "Release Announcement",
     "docs.releaseBody":
       "Use the bilingual release note for social posts, GitHub releases, and launch updates.",
+    "faq.eyebrow": "FAQ",
+    "faq.title": "Questions people usually ask before trying it.",
+    "faq.q1": "Do I need MCP to use DevPilot?",
+    "faq.a1":
+      "No. The browser package works on its own. You can annotate pages and copy task packets without running the MCP bridge.",
+    "faq.q2": "When should I add the MCP bridge?",
+    "faq.a2":
+      "Add MCP when you want session sync, SSE updates, Stability Copilot persistence, or structured repair request workflows with AI agents.",
+    "faq.q3": "Does DevPilot automatically change my code?",
+    "faq.a3":
+      "No. DevPilot prepares browser context and task packets. Actual code changes still happen in your coding agent or editor workflow.",
+    "faq.q4": "What makes this different from a normal feedback tool?",
+    "faq.a4":
+      "DevPilot is designed for browser-to-code execution. It focuses on turning real page issues into structured inputs that AI coding tools can act on.",
+    "cta.eyebrow": "Try it",
+    "cta.title": "Ready to test DevPilot on a real page?",
+    "cta.body":
+      "Start with the browser package, then add the MCP bridge when you want the connected workflow.",
+    "cta.primary": "Open getting started",
+    "cta.secondary": "Open MCP setup",
     "announce.eyebrow": "Announcement",
     "announce.title": "A bilingual launch note you can reuse.",
     "announce.subtitle":
@@ -183,6 +228,31 @@ const messages = {
       "浏览器侧主包。适合页面原生标注、任务包导出，以及本地 AI handoff 主流程。",
     "packages.mcpBody":
       "本地 bridge 与 MCP server。适合连接模式、SSE 同步、稳定性持久化和 agent 工作流。",
+    "compare.eyebrow": "模式对比",
+    "compare.title": "先用本地模式，工作流变复杂时再接连接模式。",
+    "compare.body":
+      "DevPilot 是刻意做成渐进增强的。浏览器包本身就能独立工作；只有在你需要同步会话、稳定性流程和 AI 修复编排时，才需要 MCP。",
+    "compare.localTitle": "本地模式",
+    "compare.local1": "元素、文本和区域标注",
+    "compare.local2": "复制 AI 可读任务包",
+    "compare.local3": "单页内即可立即使用",
+    "compare.local4": "适合个人调试和快速 handoff",
+    "compare.connectedTitle": "连接模式",
+    "compare.connected1": "会话同步和 SSE 更新",
+    "compare.connected2": "稳定性持久化和 repair request",
+    "compare.connected3": "Claude / Codex / MCP agent 工作流",
+    "compare.connected4": "适合可重复的浏览器到代码闭环",
+    "audience.eyebrow": "适用人群",
+    "audience.title": "适合已经长期工作在浏览器和编辑器之间的团队。",
+    "audience.devTitle": "前端开发者",
+    "audience.devBody":
+      "在问题真实发生的位置直接标出来，然后把结构化任务包交给编码助手，而不是手工重新描述页面上下文。",
+    "audience.qaTitle": "测试、产品和设计",
+    "audience.qaBody":
+      "准确指出页面哪里有问题，再把更清晰的问题输入交给实现团队或 AI 工作流。",
+    "audience.aiTitle": "AI-first 工作流",
+    "audience.aiBody":
+      "先把 DevPilot 当成浏览器侧入口，再在需要同步会话和修复编排时接入 MCP。",
     "workflow.eyebrow": "工作流",
     "workflow.title": "典型路径",
     "workflow.step1Title": "先在页面中标注",
@@ -199,6 +269,26 @@ const messages = {
     "docs.mcpBody": "运行本地 bridge，理解端口回退，并把 DevPilot 接到 Claude 或 Codex。",
     "docs.releaseTitle": "发布文案",
     "docs.releaseBody": "双语发布文案，可直接用于社媒、GitHub Release 和对外通知。",
+    "faq.eyebrow": "常见问题",
+    "faq.title": "用户在试用前通常会问的问题。",
+    "faq.q1": "不用 MCP 能用 DevPilot 吗？",
+    "faq.a1":
+      "可以。浏览器主包本身就能独立工作。你不跑 MCP bridge，也可以直接标注页面并复制任务包。",
+    "faq.q2": "什么时候才需要 MCP bridge？",
+    "faq.a2":
+      "当你需要会话同步、SSE 更新、稳定性持久化，或者要把 repair request 接到 AI agent 时，再启用 MCP。",
+    "faq.q3": "DevPilot 会自动改代码吗？",
+    "faq.a3":
+      "不会。DevPilot 负责准备浏览器上下文和任务包；真正的代码修改仍然发生在你的 coding agent 或编辑器流程里。",
+    "faq.q4": "它和普通反馈工具有什么不同？",
+    "faq.a4":
+      "DevPilot 不是纯反馈收集工具，它更强调浏览器到代码的执行闭环：把真实页面问题直接转成 AI 可以处理的结构化输入。",
+    "cta.eyebrow": "立即试用",
+    "cta.title": "准备好在真实页面里试一下 DevPilot 了吗？",
+    "cta.body":
+      "先从浏览器主包开始，等你需要连接工作流时再补上 MCP bridge。",
+    "cta.primary": "打开快速开始",
+    "cta.secondary": "打开 MCP 配置",
     "announce.eyebrow": "发布文案",
     "announce.title": "一份可直接复用的双语发布说明。",
     "announce.subtitle":

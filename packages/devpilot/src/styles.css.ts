@@ -922,8 +922,8 @@ export const styles = `
   }
 
   .dl-language-select-option-active {
-    color: #60a5fa;
-    background: rgba(59, 130, 246, 0.12);
+    color: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.12);
   }
 
   .dl-switch {

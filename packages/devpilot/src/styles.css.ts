@@ -898,7 +898,7 @@ export const styles = `
     padding: 4px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    background: #1e1e2e;
+    background: rgba(30, 30, 30, 0.98);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;

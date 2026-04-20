@@ -77,35 +77,33 @@ export function SettingsPanel({
           <div className="dl-session-detail">
             <div className="dl-detail-card">
               <div className="dl-settings-row">
-                <div className="dl-settings-main">
-                  <span className="dl-settings-name">{t("settings.language")}</span>
-                  <div className="dl-language-select" ref={languageRef}>
-                    <button
-                      className="dl-language-select-trigger"
-                      onClick={() => setLanguageOpen((prev) => !prev)}
-                    >
-                      {languageOptions.find((opt) => opt.value === locale)?.label ?? locale}
-                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-                        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                    {languageOpen ? (
-                      <div className="dl-language-select-dropdown">
-                        {languageOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            className={`dl-language-select-option${option.value === locale ? " dl-language-select-option-active" : ""}`}
-                            onClick={() => {
-                              setLocale(option.value);
-                              setLanguageOpen(false);
-                            }}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
+                <span className="dl-settings-name">{t("settings.language")}</span>
+                <div className="dl-language-select" ref={languageRef}>
+                  <button
+                    className="dl-language-select-trigger"
+                    onClick={() => setLanguageOpen((prev) => !prev)}
+                  >
+                    {languageOptions.find((opt) => opt.value === locale)?.label ?? locale}
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                      <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  {languageOpen ? (
+                    <div className="dl-language-select-dropdown">
+                      {languageOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          className={`dl-language-select-option${option.value === locale ? " dl-language-select-option-active" : ""}`}
+                          onClick={() => {
+                            setLocale(option.value);
+                            setLanguageOpen(false);
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

@@ -317,7 +317,10 @@ export function useRemoteSessionSync({
         `${syncEndpoint}/sessions/${currentSessionId}/events`,
       );
 
+      let hasConnected = false;
+
       eventSource.onopen = () => {
+        hasConnected = true;
         setSseStatus("connected");
       };
 
@@ -330,7 +333,11 @@ export function useRemoteSessionSync({
       });
 
       eventSource.onerror = () => {
-        setSseStatus("reconnecting");
+        // Only show "reconnecting" if we have successfully connected before.
+        // Otherwise the browser is still trying the initial connection.
+        if (hasConnected) {
+          setSseStatus("reconnecting");
+        }
         // Let the browser auto-reconnect; we only refresh local state opportunistically.
         void refreshSession(false);
       };

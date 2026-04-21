@@ -42,8 +42,13 @@ export function SettingsPanel({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const mcpStatus = syncEndpoint ? "connected" : "disabled";
-  const mcpLabel = syncEndpoint ? t("settings.collabMode") : t("settings.localMode");
+  const mcpStatus = syncEndpoint ? sseStatus : "disabled";
+  const mcpLabel =
+    mcpStatus === "disabled"
+      ? t("settings.localMode")
+      : mcpStatus === "connected"
+        ? t("settings.connected")
+        : t("settings.disconnected");
 
   const languageOptions: { value: DevPilotLocale; label: string }[] = [
     { value: "zh-CN", label: t("settings.language.zhCN") },
@@ -147,25 +152,6 @@ export function SettingsPanel({
                 <span
                   className="dl-settings-indicator"
                   data-status={mcpStatus}
-                  aria-hidden="true"
-                />
-              </div>
-              <div className="dl-settings-row">
-                <div className="dl-settings-main">
-                  <span className="dl-settings-name">{t("settings.sse")}</span>
-                  <span className="dl-settings-value">
-                    {sseStatus === "connected"
-                      ? t("settings.sseConnected")
-                      : sseStatus === "reconnecting"
-                        ? t("settings.sseReconnecting")
-                        : sseStatus === "connecting"
-                          ? t("settings.sseConnecting")
-                          : t("settings.sseDisabled")}
-                  </span>
-                </div>
-                <span
-                  className="dl-settings-indicator"
-                  data-status={sseStatus}
                   aria-hidden="true"
                 />
               </div>

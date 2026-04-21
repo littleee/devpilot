@@ -399,10 +399,11 @@ export const styles = `
   }
 
   .dl-marker[data-kind="area"] {
+    width: auto;
     min-width: 16px;
     height: 16px;
     gap: 4px;
-    padding: 0 4px;
+    padding: 0 5px;
     border-radius: 10px;
   }
 

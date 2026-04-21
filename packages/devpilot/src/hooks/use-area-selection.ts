@@ -5,6 +5,7 @@ import {
   isPointInsideRect,
   isWithinDevPilotEvent,
   normalizeRect,
+  resolveHoverTarget,
   toRect,
 } from "../annotation/area-selection";
 import type { DevPilotMode, DevPilotRect, DevPilotSelection } from "../types";
@@ -39,6 +40,7 @@ export function useAreaSelection(options: UseAreaSelectionOptions) {
     dragging: boolean;
   } | null>(null);
   const suppressSelectionClickRef = useRef(false);
+  const mousedownPosRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!isOpen || mode !== "annotate") {
@@ -68,10 +70,11 @@ export function useAreaSelection(options: UseAreaSelectionOptions) {
         return;
       }
 
-      if (!event.shiftKey || event.button !== 0 || isWithinDevPilotEvent(event)) {
+      if (event.button !== 0 || isWithinDevPilotEvent(event)) {
         return;
       }
 
+      mousedownPosRef.current = { x: event.clientX, y: event.clientY };
       areaSelectionRef.current = {
         startX: event.clientX,
         startY: event.clientY,
@@ -111,11 +114,6 @@ export function useAreaSelection(options: UseAreaSelectionOptions) {
         return;
       }
 
-      if (event.shiftKey) {
-        setHoverRect(null);
-        return;
-      }
-
       if (isWithinDevPilotEvent(event)) {
         setHoverRect(null);
         return;
@@ -127,7 +125,8 @@ export function useAreaSelection(options: UseAreaSelectionOptions) {
         return;
       }
 
-      const rect = target.getBoundingClientRect();
+      const hoverTarget = resolveHoverTarget(event.clientX, event.clientY, target);
+      const rect = hoverTarget.getBoundingClientRect();
       if (!rect.width || !rect.height) {
         return;
       }
@@ -234,12 +233,17 @@ export function useAreaSelection(options: UseAreaSelectionOptions) {
 
       if (suppressSelectionClickRef.current) {
         suppressSelectionClickRef.current = false;
+        mousedownPosRef.current = null;
         return;
       }
 
-      if (event.shiftKey) {
-        setHoverRect(null);
-        return;
+      if (mousedownPosRef.current) {
+        const dx = event.clientX - mousedownPosRef.current.x;
+        const dy = event.clientY - mousedownPosRef.current.y;
+        mousedownPosRef.current = null;
+        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+          return;
+        }
       }
 
       const target = event.target;

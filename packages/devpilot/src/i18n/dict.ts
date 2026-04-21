@@ -42,13 +42,9 @@ export interface TranslationDict {
   "settings.stabilityTooltip": string;
   "settings.connection": string;
   "settings.mcp": string;
-  "settings.collabMode": string;
   "settings.localMode": string;
-  "settings.sse": string;
-  "settings.sseConnected": string;
-  "settings.sseReconnecting": string;
-  "settings.sseConnecting": string;
-  "settings.sseDisabled": string;
+  "settings.connected": string;
+  "settings.disconnected": string;
   "settings.endpoint": string;
   "settings.notConfigured": string;
   "settings.session": string;
@@ -184,13 +180,9 @@ const dictZhCN: TranslationDict = {
   "settings.stabilityTooltip": "开启后将自动捕获 JS 异常、Promise 拒绝和接口失败",
   "settings.connection": "连接",
   "settings.mcp": "MCP",
-  "settings.collabMode": "协作模式",
   "settings.localMode": "本地模式",
-  "settings.sse": "SSE",
-  "settings.sseConnected": "已连接",
-  "settings.sseReconnecting": "重连中",
-  "settings.sseConnecting": "连接中",
-  "settings.sseDisabled": "未启用",
+  "settings.connected": "已连接",
+  "settings.disconnected": "未连接",
   "settings.endpoint": "Endpoint",
   "settings.notConfigured": "未配置",
   "settings.session": "Session",
@@ -326,13 +318,9 @@ const dictEnUS: TranslationDict = {
   "settings.stabilityTooltip": "Auto-capture JS errors, promise rejections, and failed requests when enabled",
   "settings.connection": "Connection",
   "settings.mcp": "MCP",
-  "settings.collabMode": "Collaboration",
   "settings.localMode": "Local",
-  "settings.sse": "SSE",
-  "settings.sseConnected": "Connected",
-  "settings.sseReconnecting": "Reconnecting",
-  "settings.sseConnecting": "Connecting",
-  "settings.sseDisabled": "Disabled",
+  "settings.connected": "Connected",
+  "settings.disconnected": "Disconnected",
   "settings.endpoint": "Endpoint",
   "settings.notConfigured": "Not configured",
   "settings.session": "Session",

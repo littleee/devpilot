@@ -143,6 +143,13 @@ const AREA_SEMANTIC_TAGS = new Set([
   "td",
   "th",
   "li",
+  "p",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
 ]);
 
 const AREA_FRAGMENT_PATTERN =
@@ -236,6 +243,85 @@ export function isWithinDevPilotEvent(event: Event): boolean {
   }
 
   return isWithinDevPilotTarget(event.target);
+}
+
+export function resolveHoverTarget(
+  x: number,
+  y: number,
+  fallback: HTMLElement,
+): HTMLElement {
+  const elements = document.elementsFromPoint(x, y);
+
+  for (const el of elements) {
+    if (!(el instanceof HTMLElement)) {
+      continue;
+    }
+    if (el.closest(`[${ROOT_ATTR}]`) || el.closest(`[${HOST_ATTR}]`)) {
+      continue;
+    }
+    if (el === document.body || el === document.documentElement) {
+      continue;
+    }
+
+    const rect = el.getBoundingClientRect();
+    if (rect.width < 10 || rect.height < 10) {
+      continue;
+    }
+
+    // Skip near-viewport-size wrappers; keep looking for inner content
+    if (rect.width > window.innerWidth * 0.85 && rect.height > window.innerHeight * 0.5) {
+      continue;
+    }
+
+    const tagName = el.tagName.toLowerCase();
+    if (AREA_PREVIEW_MEANINGFUL_TAGS.has(tagName)) {
+      return el;
+    }
+
+    const role = el.getAttribute("role");
+    if (role && AREA_INTERACTIVE_ROLES.has(role)) {
+      return el;
+    }
+
+    // A non-inline div/span that has text and no nested meaningful children
+    // is likely a leaf content block (card, panel, etc.)
+    if ((tagName === "div" || tagName === "span") && !hasNestedAreaContent(el)) {
+      const text = getNormalizedElementText(el);
+      const computed = window.getComputedStyle(el);
+      if (text && computed.display !== "inline") {
+        return el;
+      }
+    }
+  }
+
+  // Fallback: if the raw target itself is huge, try to snap to a structured child
+  const fallbackRect = fallback.getBoundingClientRect();
+  if (
+    fallbackRect.width > window.innerWidth * 0.7 ||
+    fallbackRect.height > window.innerHeight * 0.5
+  ) {
+    const children = Array.from(fallback.children).filter(
+      (c): c is HTMLElement => c instanceof HTMLElement,
+    );
+    for (const child of children) {
+      const childRect = toRect(child.getBoundingClientRect());
+      if (
+        childRect.width < 120 ||
+        childRect.height < 44 ||
+        childRect.width > window.innerWidth * 0.96 ||
+        childRect.height > window.innerHeight * 0.82
+      ) {
+        continue;
+      }
+      const meaningfulChildren = countMeaningfulAreaChildren(child);
+      const descendantCount = child.querySelectorAll(AREA_MATCH_SELECTOR).length;
+      if (meaningfulChildren >= 2 || descendantCount >= 2) {
+        return child;
+      }
+    }
+  }
+
+  return fallback;
 }
 
 function getComputedStyleSnapshot(element: HTMLElement): Record<string, string> {
@@ -434,8 +520,21 @@ export function describeElement(
       current.classList.length > 0
         ? `.${Array.from(current.classList).slice(0, 2).join(".")}`
         : "";
-    path.unshift(`${part}${id}${className}`);
-    current = current.parentElement;
+
+    const parent = current.parentElement;
+    let nthChild = "";
+    if (parent) {
+      const sameTagSiblings = Array.from(parent.children).filter(
+        (child) => child.tagName.toLowerCase() === part,
+      );
+      if (sameTagSiblings.length > 1) {
+        const index = Array.from(parent.children).indexOf(current) + 1;
+        nthChild = `:nth-child(${index})`;
+      }
+    }
+
+    path.unshift(`${part}${id}${className}${nthChild}`);
+    current = parent;
     depth += 1;
   }
 
@@ -624,7 +723,15 @@ function shouldIncludeCommittedAreaElement(element: HTMLElement): boolean {
   }
 
   if (tagName === "div" || tagName === "span") {
-    return isAreaInteractiveLikeElement(element) && !hasNestedAreaContent(element);
+    // Interactive leaf elements
+    if (isAreaInteractiveLikeElement(element) && !hasNestedAreaContent(element)) {
+      return true;
+    }
+    // Text-only leaf containers (common in utility-first CSS frameworks)
+    const text = getNormalizedElementText(element);
+    if (text && !hasNestedAreaContent(element)) {
+      return true;
+    }
   }
 
   return false;

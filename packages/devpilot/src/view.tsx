@@ -265,6 +265,18 @@ function DevPilotContent({
       annotation.pageY,
     );
 
+  const selectionViewportRect = useMemo(() => {
+    void scrollTick;
+    const s = annotationsHook.selection;
+    if (!s) return null;
+    return {
+      left: s.pageX - window.scrollX,
+      top: s.pageY - window.scrollY,
+      width: s.rect.width,
+      height: s.rect.height,
+    };
+  }, [annotationsHook.selection, scrollTick]);
+
   const areaDraftPreview = useMemo(
     () => (areaSelection.areaDraftRect ? describeAreaDraftPreview(areaSelection.areaDraftRect) : null),
     [areaSelection.areaDraftRect],
@@ -370,26 +382,26 @@ function DevPilotContent({
         </>
       ) : null}
 
-      {annotationsHook.selection?.kind === "area" ? (
+      {selectionViewportRect && annotationsHook.selection?.kind === "area" ? (
         <div
           className="dl-area-selection-focus"
           style={{
-            left: annotationsHook.selection.rect.left,
-            top: annotationsHook.selection.rect.top,
-            width: annotationsHook.selection.rect.width,
-            height: annotationsHook.selection.rect.height,
+            left: selectionViewportRect.left,
+            top: selectionViewportRect.top,
+            width: selectionViewportRect.width,
+            height: selectionViewportRect.height,
           }}
         />
       ) : null}
 
-      {annotationsHook.selection?.kind === "text" ? (
+      {selectionViewportRect && annotationsHook.selection?.kind === "text" ? (
         <div
           className="dl-text-selection-focus"
           style={{
-            left: annotationsHook.selection.rect.left,
-            top: annotationsHook.selection.rect.top,
-            width: annotationsHook.selection.rect.width,
-            height: annotationsHook.selection.rect.height,
+            left: selectionViewportRect.left,
+            top: selectionViewportRect.top,
+            width: selectionViewportRect.width,
+            height: selectionViewportRect.height,
           }}
         />
       ) : null}
@@ -434,7 +446,7 @@ function DevPilotContent({
         </button>
       ))}
 
-      {annotationsHook.selection && annotationsHook.pendingMarkerStyle ? (
+      {annotationsHook.selection && annotationsHook.pendingMarkerStyle && !annotationsHook.editingId ? (
         <button
           className="dl-marker"
           data-kind={annotationsHook.selection.kind}

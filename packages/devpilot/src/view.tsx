@@ -44,7 +44,7 @@ import type {
   DevPilotMountOptions,
   DevPilotRect,
 } from "./types";
-import { resolveDevPilotFeatures } from "./types";
+import { resolveDevPilotFeatures, isOpenDevPilotAnnotationStatus } from "./types";
 import { styles } from "./styles.css";
 
 function stopEditableEventPropagation(event: React.SyntheticEvent<HTMLElement>): void {
@@ -98,6 +98,7 @@ function DevPilotContent({
   const annotationsRef = useRef<DevPilotAnnotation[]>([]);
   const currentSessionIdRef = useRef<string | null>(null);
 
+
   const annotationsHook = useAnnotations({
     pathname,
     syncEndpoint,
@@ -140,6 +141,108 @@ function DevPilotContent({
     onSessionCreated,
     onConnectionStateChange,
   });
+
+  const openAnnotationsRef = useRef(annotationsHook.openAnnotations);
+  openAnnotationsRef.current = annotationsHook.openAnnotations;
+  const selectionRef = useRef(annotationsHook.selection);
+  selectionRef.current = annotationsHook.selection;
+
+  useEffect(() => {
+    let rafId: number;
+
+    const syncPositions = () => {
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
+
+      openAnnotationsRef.current.forEach((annotation) => {
+        const marker = document.querySelector(
+          `[data-devpilot-marker-id="${annotation.id}"]`,
+        );
+        if (!(marker instanceof HTMLElement)) {
+          return;
+        }
+
+        let rect: DevPilotRect;
+        if (annotation.kind !== "area") {
+          try {
+            const liveElement = document.querySelector(annotation.elementPath);
+            if (
+              liveElement instanceof HTMLElement &&
+              !liveElement.closest(`[${ROOT_ATTR}]`) &&
+              !liveElement.closest(`[${HOST_ATTR}]`)
+            ) {
+              const liveRect = toRect(liveElement.getBoundingClientRect());
+              if (liveRect.width > 0 && liveRect.height > 0) {
+                rect = liveRect;
+              } else {
+                rect = {
+                  left: annotation.pageX - scrollX,
+                  top: annotation.pageY - scrollY,
+                  width: annotation.rect.width,
+                  height: annotation.rect.height,
+                };
+              }
+            } else {
+              rect = {
+                left: annotation.pageX - scrollX,
+                top: annotation.pageY - scrollY,
+                width: annotation.rect.width,
+                height: annotation.rect.height,
+              };
+            }
+          } catch {
+            rect = {
+              left: annotation.pageX - scrollX,
+              top: annotation.pageY - scrollY,
+              width: annotation.rect.width,
+              height: annotation.rect.height,
+            };
+          }
+        } else {
+          rect = {
+            left: annotation.pageX - scrollX,
+            top: annotation.pageY - scrollY,
+            width: annotation.rect.width,
+            height: annotation.rect.height,
+          };
+        }
+
+        const anchoredLeft = rect.left + Math.min(Math.max(rect.width * 0.18, 12), 28);
+        const anchoredTop = rect.top - 14;
+        marker.style.left = `${Math.max(
+          12,
+          Number.isFinite(rect.left) ? anchoredLeft : annotation.pageX - scrollX,
+        )}px`;
+        marker.style.top = `${Math.max(
+          12,
+          Number.isFinite(rect.top) ? anchoredTop : annotation.pageY - scrollY - 14,
+        )}px`;
+      });
+
+      const selection = selectionRef.current;
+      if (selection) {
+        const left = selection.pageX - scrollX;
+        const top = selection.pageY - scrollY;
+        document.querySelectorAll("[data-devpilot-selection-focus]").forEach((el) => {
+          if (el instanceof HTMLElement) {
+            el.style.left = `${left}px`;
+            el.style.top = `${top}px`;
+          }
+        });
+      }
+    };
+
+    const onScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(syncPositions);
+    };
+
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
 
   const areaSelection = useAreaSelection({
     isOpen,
@@ -385,6 +488,7 @@ function DevPilotContent({
       {selectionViewportRect && annotationsHook.selection?.kind === "area" ? (
         <div
           className="dl-area-selection-focus"
+          data-devpilot-selection-focus=""
           style={{
             left: selectionViewportRect.left,
             top: selectionViewportRect.top,
@@ -397,6 +501,7 @@ function DevPilotContent({
       {selectionViewportRect && annotationsHook.selection?.kind === "text" ? (
         <div
           className="dl-text-selection-focus"
+          data-devpilot-selection-focus=""
           style={{
             left: selectionViewportRect.left,
             top: selectionViewportRect.top,
@@ -410,6 +515,7 @@ function DevPilotContent({
         <button
           key={annotation.id}
           className="dl-marker"
+          data-devpilot-marker-id={annotation.id}
           data-kind={getAnnotationKind(annotation)}
           data-status={annotation.status}
           style={markerStyle(annotation)}

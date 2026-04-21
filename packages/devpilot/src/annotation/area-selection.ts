@@ -521,11 +521,11 @@ export function describeElement(
         ? `.${Array.from(current.classList).slice(0, 2).join(".")}`
         : "";
 
-    const parent = current.parentElement;
+    const parent = current.parentElement as HTMLElement | null;
     let nthChild = "";
     if (parent) {
       const sameTagSiblings = Array.from(parent.children).filter(
-        (child) => child.tagName.toLowerCase() === part,
+        (child) => (child as Element).tagName.toLowerCase() === part,
       );
       if (sameTagSiblings.length > 1) {
         const index = Array.from(parent.children).indexOf(current) + 1;

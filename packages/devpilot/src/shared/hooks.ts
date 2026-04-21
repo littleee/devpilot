@@ -5,10 +5,8 @@ export function useScrollTick(): number {
 
   useEffect(() => {
     const bump = () => setTick((value) => value + 1);
-    const onScroll = () => bump();
     const onResize = () => bump();
 
-    window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onResize);
 
     // Re-calculate after custom fonts load (FOUT/FOIT shifts element positions).
@@ -25,7 +23,6 @@ export function useScrollTick(): number {
     }
 
     return () => {
-      window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("load", onLoad);
     };

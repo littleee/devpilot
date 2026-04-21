@@ -133,7 +133,12 @@ export function useRemoteSessionSync({
         onSessionCreated?.(session.id);
       })
       .catch((error) => {
+        if (cancelled) {
+          return;
+        }
         console.warn("[DevPilot] Failed to ensure remote session:", error);
+        setCurrentSessionId(null);
+        clearSessionId(pathname);
       });
 
     return () => {

@@ -3,6 +3,7 @@ import { createAnnotationRepository } from "./store/annotation-repository.js";
 import { createRepairRepository } from "./store/repair-repository.js";
 import { createSessionRepository } from "./store/session-repository.js";
 import { createStabilityRepository } from "./store/stability-repository.js";
+import { createWorkspaceRepository } from "./store/workspace-repository.js";
 import type { DevPilotSessionWithAnnotations } from "./types.js";
 
 export function createStore(dbPath = DEFAULT_DB_PATH) {
@@ -10,6 +11,7 @@ export function createStore(dbPath = DEFAULT_DB_PATH) {
   initDatabase(db);
 
   const sessions = createSessionRepository(db);
+  const workspaces = createWorkspaceRepository(db);
   const annotations = createAnnotationRepository(db, {
     getSessionById: sessions.getSessionById,
     touchSession: sessions.touchSession,
@@ -29,6 +31,11 @@ export function createStore(dbPath = DEFAULT_DB_PATH) {
     },
     ensureSession: sessions.ensureSession,
     listSessions: sessions.listSessions,
+    registerWorkspace: workspaces.registerWorkspace,
+    listWorkspaces: workspaces.listWorkspaces,
+    getWorkspace(id: string) {
+      return workspaces.getWorkspaceById(id);
+    },
     getSession(id: string) {
       return sessions.getSessionById(id);
     },

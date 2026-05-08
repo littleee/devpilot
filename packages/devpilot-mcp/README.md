@@ -169,8 +169,13 @@ mountDevPilot({
 
 ## 当前 MCP Tools
 
+- `devpilot_register_workspace`
+- `devpilot_list_workspaces`
+- `devpilot_auto_discover_workspaces`
 - `devpilot_list_sessions`
 - `devpilot_get_session`
+- `devpilot_get_session_task_packet`
+- `devpilot_get_agent_playbook`
 - `devpilot_get_pending`
 - `devpilot_get_all_pending`
 - `devpilot_list_stability_items`
@@ -186,7 +191,56 @@ mountDevPilot({
 - `devpilot_watch_stability_items`
 - `devpilot_list_repair_requests`
 - `devpilot_get_repair_request`
+- `devpilot_resolve_annotation_source`
+- `devpilot_resolve_stability_source`
+- `devpilot_get_source_snippet`
 - `devpilot_accept_repair_request`
 - `devpilot_complete_repair_request`
 - `devpilot_dismiss_repair_request`
 - `devpilot_watch_repair_requests`
+
+## 官方 Agent Playbook
+
+`devpilot-mcp` 现在内置了三种官方 workflow mode：
+
+- `critique`
+  - 先诊断、定位和回复，不直接改代码
+  - 适合 source resolution 还弱、问题风险高、或你只想先拿诊断结论
+- `self-driving`
+  - 直接定位、改代码、验证、回复、再 resolve
+  - 适合 repair request 明确、目标文件清晰、并且任务范围足够收敛
+- `watch`
+  - 持续 watch 新 annotation / stability / repair request，再把每一批分流到 `critique` 或 `self-driving`
+  - 适合你想把 Claude / Codex 当成常驻 intake agent
+
+推荐的最短路径现在是：
+
+1. 优先用 `devpilot_auto_discover_workspaces` 自动发现本地项目根目录
+2. 如有需要，再用 `devpilot_register_workspace` 手工补充或修正 workspace
+3. `devpilot_get_session_task_packet`
+4. 读取返回里的 `workflow.recommendedMode`、`workflow.nextTools` 和 `workflow.sessionPrompt`
+5. 如需完整的官方模式说明，再调用 `devpilot_get_agent_playbook`
+6. 按模式继续：
+   - `critique`：`acknowledge/diagnose -> resolve source -> snippet -> reply`
+   - `self-driving`：`accept/acknowledge -> resolve source -> snippet -> edit -> reply -> resolve/complete`
+   - `watch`：`watch_* -> get_session_task_packet -> branch to critique/self-driving`
+
+`devpilot_get_session_task_packet` 现在除了返回 `devpilot.task-packet/v2` 之外，还会额外返回 `workflow`：
+
+- `recommendedMode`
+- `reasons`
+- `nextTools`
+- `completionTools`
+- `sessionPrompt`
+
+而 `devpilot_get_agent_playbook` 会返回结构化的官方 playbook：
+
+- mode summary
+- useWhen / avoidWhen
+- decisionRules / escalationRules
+- ordered `toolSequence`
+- default `system` / `task` prompt templates
+
+所以 agent 不只拿到一份 task packet，也能拿到一套“官方建议应该怎么处理这类 packet”的执行手册。
+
+如果没有显式注册 workspace，`devpilot_get_session_task_packet` 和 `devpilot_get_agent_playbook` 也都会尝试从当前工作目录向上自动发现 workspace，并结合页面 route 与 runtime stack 做更强的源码映射。

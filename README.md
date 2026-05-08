@@ -43,10 +43,11 @@ Annotate -> Copy to AI -> Paste into Claude / Codex / Cursor
 
 ### What Gets Copied
 
-Clicking **Copy to AI** produces a `devpilot.task-packet/v1` markdown document that includes:
+Clicking **Copy to AI** produces a `devpilot.task-packet/v2` markdown document that includes:
 
 - Page context (title, URL, viewport)
-- Task summary (issue count, type)
+- Structured summary (issue counts, source-hit count)
+- Agent brief (intent, priority, constraints, acceptance criteria, output contract)
 - Annotations grouped by inferred page region (Header, Main Content, Sidebar, etc.)
 - Each annotation includes: element path, DOM depth, CSS classes, component hints, source hits
 - Stability issues (if Stability Copilot is enabled and issues exist)
@@ -56,12 +57,16 @@ Clicking **Copy to AI** produces a `devpilot.task-packet/v1` markdown document t
 
 ```markdown
 # DevPilot Task Packet
-**Schema:** devpilot.task-packet/v1
+**Schema:** devpilot.task-packet/v2
 
 ## Page Context
 **Page:** My App
 **URL:** http://localhost:3000/dashboard
 **Viewport:** 1440x900
+
+## Agent Brief
+**Intent:** ui-fix
+**Priority:** medium
 
 ## Task
 **Type:** annotation
@@ -158,6 +163,26 @@ mountDevPilot({
 ```
 
 > You must also run the [`@littleee/devpilot-mcp`](./packages/devpilot-mcp) bridge locally for connected mode.
+
+## Connected Agent Flow
+
+When `@littleee/devpilot-mcp` is running, Claude, Codex, or another MCP-compatible agent can pull the same standardized brief that DevPilot exports in local mode.
+
+Recommended flow:
+
+1. Start the local bridge with `npx -y @littleee/devpilot-mcp server`
+2. Connect your coding agent to the DevPilot MCP server
+3. Prefer `devpilot_auto_discover_workspaces`; use `devpilot_register_workspace` only when you need to correct or add a workspace manually
+4. Call `devpilot_list_sessions` to find the active browser session
+5. Call `devpilot_get_session_task_packet` to get an agent-ready `devpilot.task-packet/v2`
+6. Read `workflow.recommendedMode`, `workflow.nextTools`, and `workflow.sessionPrompt` from the response
+7. If you want the full official workflow definition, call `devpilot_get_agent_playbook`
+8. Use `packet.resolvedSources`, `packet.agent.primaryTargets`, `packet.agent.acceptanceCriteria`, and `packet.sourceHits` to locate and fix the issue
+9. Use `devpilot_reply`, `devpilot_resolve`, or `devpilot_complete_repair_request` to write status back
+
+`devpilot_get_session_task_packet` is still the shortest path when you want a coding agent to start from a structured brief instead of stitching together raw session data by hand, but it now also returns a recommended workflow mode plus the next MCP tools to call. `devpilot_get_agent_playbook` exposes the full official DevPilot playbook for `critique`, `self-driving`, and `watch` modes, including default prompt templates and ordered tool sequencing. When workspaces are discovered or registered, DevPilot also returns verified local file matches with line and column information, and it now uses route-aware matching when stack traces are weak.
+
+Remote sync stays opt-in. Passing an `endpoint` alone does not enable MCP sync; set `features.mcp: true` as well when you want the browser package to talk to the local bridge.
 
 ## Workspace
 

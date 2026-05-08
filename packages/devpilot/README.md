@@ -21,7 +21,7 @@ npm install @littleee/devpilot
 - structured task-packet export for AI coding workflows
 - optional Stability Copilot for runtime errors and failed requests
 - explicit repair request flow instead of automatic code modification
-- optional MCP sync when an `endpoint` is provided
+- optional MCP sync when both an `endpoint` and `features.mcp: true` are provided
 
 ## Main Flow
 
@@ -71,7 +71,7 @@ mountDevPilot({
 
 - **Core annotation**: enabled by default
 - **Stability Copilot**: opt-in. Can be toggled at any time via the settings panel switch
-- **MCP sync**: opt-in, enabled when `endpoint` is provided
+- **MCP sync**: opt-in. Requires both `features.mcp: true` and an `endpoint`
 
 ```ts
 mountDevPilot({
@@ -83,6 +83,8 @@ mountDevPilot({
 ```
 
 > `features.stability: true` only sets the initial state. The user can still turn Stability Copilot on or off in the settings panel at runtime. All state is persisted in `localStorage`.
+>
+> Passing an `endpoint` alone no longer enables remote sync. This avoids local-only installs accidentally reporting bridge connection errors as page issues.
 
 When `mcp` is enabled and an endpoint is provided, DevPilot syncs annotations and stability items to the local bridge. Repairs are created only when the user explicitly triggers them. DevPilot does not automatically modify code.
 

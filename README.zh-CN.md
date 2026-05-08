@@ -43,10 +43,11 @@
 
 ### 复制的内容
 
-点击 **复制给 AI** 会生成一份 `devpilot.task-packet/v1` Markdown 文档，包含：
+点击 **复制给 AI** 会生成一份 `devpilot.task-packet/v2` Markdown 文档，包含：
 
 - 页面上下文（标题、URL、视口）
-- 任务摘要（问题数量、类型）
+- 结构化摘要（问题数量、source hit 数量）
+- Agent brief（intent、priority、constraints、acceptance criteria、output contract）
 - 按推断页面区域分组的标注（Header、Main Content、Sidebar 等）
 - 每条标注包含：元素路径、DOM 深度、CSS 类、组件提示、源码线索
 - 稳定性问题（如果稳定性副驾已启用且存在问题）
@@ -56,12 +57,16 @@
 
 ```markdown
 # DevPilot Task Packet
-**Schema:** devpilot.task-packet/v1
+**Schema:** devpilot.task-packet/v2
 
 ## Page Context
 **Page:** My App
 **URL:** http://localhost:3000/dashboard
 **Viewport:** 1440x900
+
+## Agent Brief
+**Intent:** ui-fix
+**Priority:** medium
 
 ## Task
 **Type:** annotation
@@ -158,6 +163,26 @@ mountDevPilot({
 ```
 
 > 连接模式还需要在本地运行 [`@littleee/devpilot-mcp`](./packages/devpilot-mcp) bridge。
+
+## 连接模式下的 Agent 工作流
+
+当 `@littleee/devpilot-mcp` 正在运行时，Claude、Codex 或其他兼容 MCP 的 agent 可以直接拿到和本地复制流程一致的标准化 brief。
+
+推荐顺序：
+
+1. 用 `npx -y @littleee/devpilot-mcp server` 启动本地 bridge
+2. 把你的 coding agent 连接到 DevPilot MCP server
+3. 优先调用 `devpilot_auto_discover_workspaces` 自动发现本地项目根目录；只有需要修正时再用 `devpilot_register_workspace`
+4. 调用 `devpilot_list_sessions` 找到当前活跃浏览器会话
+5. 调用 `devpilot_get_session_task_packet` 获取 agent-ready 的 `devpilot.task-packet/v2`
+6. 读取返回结果里的 `workflow.recommendedMode`、`workflow.nextTools` 和 `workflow.sessionPrompt`
+7. 如果你想拿到完整的官方工作模式说明，再调用 `devpilot_get_agent_playbook`
+8. 用 `packet.resolvedSources`、`packet.agent.primaryTargets`、`packet.agent.acceptanceCriteria` 和 `packet.sourceHits` 来定位和修复问题
+9. 用 `devpilot_reply`、`devpilot_resolve` 或 `devpilot_complete_repair_request` 把处理状态回写
+
+如果你希望 agent 直接从结构化 brief 开始工作，而不是手动拼接原始 session 数据，`devpilot_get_session_task_packet` 仍然是最短路径，但它现在还会额外返回推荐 workflow mode 和下一步应该调用的 MCP tools。`devpilot_get_agent_playbook` 则会给出完整的官方 `critique`、`self-driving` 和 `watch` 模式，包括默认 prompt 模板和 tool 顺序。发现或注册 workspace 后，DevPilot 会返回已经验证过的本地文件、行号和列号；在 stack 比较弱的时候，还会结合页面 route 做额外的源码映射。
+
+远端同步现在保持显式开启。只传 `endpoint` 不会自动启用 MCP sync；如果你希望浏览器侧真的连接本地 bridge，需要同时设置 `features.mcp: true`。
 
 ## 工作空间
 

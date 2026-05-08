@@ -52,7 +52,7 @@ type UseRemoteSessionSyncResult = {
   currentSessionId: string | null;
   currentSessionIdRef: MutableRefObject<string | null>;
   annotationsRef: MutableRefObject<DevPilotAnnotation[]>;
-  sseStatus: "disabled" | "connecting" | "connected" | "reconnecting";
+  sseStatus: "disabled" | "connecting" | "connected" | "reconnecting" | "error";
 };
 
 function mergeIfChanged<T>(current: T[], next: T[]): T[] {
@@ -77,7 +77,7 @@ export function useRemoteSessionSync({
     loadSessionId(pathname),
   );
   const [sseStatus, setSseStatus] = useState<
-    "disabled" | "connecting" | "connected" | "reconnecting"
+    "disabled" | "connecting" | "connected" | "reconnecting" | "error"
   >(syncEndpoint ? "connecting" : "disabled");
   const internalAnnotationsRef = useRef<DevPilotAnnotation[]>(annotations);
   const annotationsRef = externalAnnotationsRef || internalAnnotationsRef;
@@ -137,6 +137,7 @@ export function useRemoteSessionSync({
           return;
         }
         console.warn("[DevPilot] Failed to ensure remote session:", error);
+        setSseStatus("error");
         setCurrentSessionId(null);
         clearSessionId(pathname);
       });

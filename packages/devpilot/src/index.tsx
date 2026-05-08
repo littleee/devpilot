@@ -88,9 +88,15 @@ export {
   formatDevPilotTaskPacketMarkdown,
 } from "./task-packet";
 export type {
+  DevPilotAgentChangeScope,
+  DevPilotAgentExecutionMode,
+  DevPilotAgentIntent,
+  DevPilotAgentPriority,
   DevPilotTaskPacket,
+  DevPilotTaskPacketAgentBrief,
   DevPilotTaskPacketEvidence,
   DevPilotTaskPacketPageContext,
+  DevPilotTaskPacketSummary,
   DevPilotTaskPacketTask,
 } from "./task-packet";
 export type {

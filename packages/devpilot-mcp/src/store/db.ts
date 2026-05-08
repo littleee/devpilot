@@ -61,6 +61,15 @@ export function initDatabase(db: Database.Database): void {
       updated_at INTEGER NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS workspaces (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      root_path TEXT NOT NULL UNIQUE,
+      dev_server_urls_json TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS annotations (
       id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL,
@@ -141,6 +150,7 @@ export function initDatabase(db: Database.Database): void {
   ensureColumn(db, "repair_requests", "actor_id", "TEXT");
 
   db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_workspaces_root_path ON workspaces(root_path);
     CREATE INDEX IF NOT EXISTS idx_repair_requests_idempotency ON repair_requests(idempotency_key);
     CREATE INDEX IF NOT EXISTS idx_sessions_page_key ON sessions(page_key);
     CREATE INDEX IF NOT EXISTS idx_annotations_session_id ON annotations(session_id);

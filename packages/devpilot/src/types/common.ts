@@ -76,7 +76,7 @@ export function resolveDevPilotFeatures(
 ): ResolvedDevPilotFeatureFlags {
   return {
     stability: features?.stability ?? false,
-    mcp: features?.mcp ?? Boolean(endpoint),
+    mcp: Boolean(endpoint) && (features?.mcp ?? false),
   };
 }
 

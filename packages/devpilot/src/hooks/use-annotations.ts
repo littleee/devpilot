@@ -110,8 +110,8 @@ export function useAnnotations(options: UseAnnotationsOptions) {
     const anchoredTop = rect.top - 14;
 
     return {
-      left: Math.max(12, Number.isFinite(rect.left) ? anchoredLeft : pageX - window.scrollX),
-      top: Math.max(12, Number.isFinite(rect.top) ? anchoredTop : pageY - window.scrollY - 14),
+      left: Number.isFinite(rect.left) ? anchoredLeft : pageX - window.scrollX,
+      top: Number.isFinite(rect.top) ? anchoredTop : pageY - window.scrollY - 14,
     };
   };
 

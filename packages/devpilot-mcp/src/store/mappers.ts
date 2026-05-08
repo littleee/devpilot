@@ -5,6 +5,7 @@ import type {
   DevPilotRepairRequestRecord,
   DevPilotSessionRecord,
   DevPilotStabilityItemRecord,
+  DevPilotWorkspaceRecord,
 } from "../types.js";
 import type {
   AnnotationRow,
@@ -12,6 +13,7 @@ import type {
   ReplyRow,
   SessionRow,
   StabilityRow,
+  WorkspaceRow,
 } from "./row-types.js";
 
 export function parseJson<T>(value: string | null, fallback: T): T {
@@ -45,6 +47,17 @@ export function rowToSession(row: SessionRow): DevPilotSessionRecord {
   };
 }
 
+export function rowToWorkspace(row: WorkspaceRow): DevPilotWorkspaceRecord {
+  return {
+    id: row.id,
+    name: row.name,
+    rootPath: row.root_path,
+    devServerUrls: parseJson<string[]>(row.dev_server_urls_json, []),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export function rowToReply(row: ReplyRow): DevPilotAnnotationReply {
   return {
     id: row.id,
@@ -52,6 +65,22 @@ export function rowToReply(row: ReplyRow): DevPilotAnnotationReply {
     role: row.role,
     content: row.content,
     createdAt: row.created_at,
+  };
+}
+
+export function serializeWorkspace(
+  workspace: DevPilotWorkspaceRecord,
+): Record<string, number | string | null> {
+  return {
+    id: workspace.id,
+    name: workspace.name,
+    rootPath: workspace.rootPath,
+    devServerUrlsJson:
+      workspace.devServerUrls && workspace.devServerUrls.length > 0
+        ? JSON.stringify(workspace.devServerUrls)
+        : null,
+    createdAt: workspace.createdAt,
+    updatedAt: workspace.updatedAt,
   };
 }
 

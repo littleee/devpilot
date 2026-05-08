@@ -484,7 +484,22 @@ function getSourceHints(element: HTMLElement): string[] {
       const fiber = current[fiberKey];
       // React DevTools may inject _debugSource
       if (fiber?._debugSource?.fileName) {
-        hints.push(fiber._debugSource.fileName);
+        const fileName = String(fiber._debugSource.fileName);
+        const lineNumber =
+          typeof fiber._debugSource.lineNumber === "number"
+            ? fiber._debugSource.lineNumber
+            : undefined;
+        const columnNumber =
+          typeof fiber._debugSource.columnNumber === "number"
+            ? fiber._debugSource.columnNumber
+            : undefined;
+        if (lineNumber && columnNumber) {
+          hints.push(`${fileName}:${lineNumber}:${columnNumber}`);
+        } else if (lineNumber) {
+          hints.push(`${fileName}:${lineNumber}`);
+        } else {
+          hints.push(fileName);
+        }
       }
       break;
     }
@@ -492,7 +507,7 @@ function getSourceHints(element: HTMLElement): string[] {
     depth += 1;
   }
 
-  return hints;
+  return Array.from(new Set(hints));
 }
 
 export function describeElement(

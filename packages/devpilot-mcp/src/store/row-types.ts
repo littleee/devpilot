@@ -17,6 +17,15 @@ export type SessionRow = {
   updated_at: number;
 };
 
+export type WorkspaceRow = {
+  id: string;
+  name: string;
+  root_path: string;
+  dev_server_urls_json: string | null;
+  created_at: number;
+  updated_at: number;
+};
+
 export type AnnotationRow = {
   id: string;
   session_id: string;

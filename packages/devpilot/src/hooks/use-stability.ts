@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { startAutoObservation } from "../observation/collectors";
+import {
+  isDevPilotClientRequest,
+  startAutoObservation,
+} from "../observation/collectors";
 import {
   createDevPilotStabilityRepairPayload,
   formatDevPilotStabilityRepairMarkdown,
@@ -28,6 +31,40 @@ import { isOpenDevPilotAnnotationStatus } from "../types";
 import { mergeRemoteRepairRequests, sortRepairRequestsByUpdatedAt } from "../repair/state";
 
 const AUTO_OBSERVATION_DEDUPE_MS = 30_000;
+
+function normalizeEndpointForComparison(endpoint: string | undefined): string | null {
+  if (!endpoint) {
+    return null;
+  }
+
+  try {
+    return new URL(endpoint, window.location.href).toString().replace(/\/+$/, "");
+  } catch {
+    return endpoint.replace(/\/+$/, "");
+  }
+}
+
+function isDevPilotInternalRequest(
+  url: string,
+  headers: HeadersInit | undefined,
+  syncEndpoint: string | undefined,
+): boolean {
+  if (isDevPilotClientRequest(headers)) {
+    return true;
+  }
+
+  const normalizedEndpoint = normalizeEndpointForComparison(syncEndpoint);
+  if (!normalizedEndpoint) {
+    return false;
+  }
+
+  try {
+    const normalizedUrl = new URL(url, window.location.href).toString();
+    return normalizedUrl === normalizedEndpoint || normalizedUrl.startsWith(`${normalizedEndpoint}/`);
+  } catch {
+    return url === normalizedEndpoint || url.startsWith(`${normalizedEndpoint}/`);
+  }
+}
 
 export interface UseStabilityOptions {
   stabilityEnabled: boolean;
@@ -116,6 +153,8 @@ export function useStability(options: UseStabilityOptions) {
           target.closest("[data-devpilot-root]") || target.closest("[data-devpilot-host]"),
         );
       },
+      shouldIgnoreNetworkRequest: ({ url, headers }) =>
+        isDevPilotInternalRequest(url, headers, syncEndpoint),
       recordObservedStabilityItem,
     });
     // recordObservedStabilityItem is intentionally omitted to avoid re-registering observers.

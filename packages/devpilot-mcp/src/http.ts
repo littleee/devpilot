@@ -11,14 +11,20 @@ import { createEventStreamHub } from "./http/events.js";
 import { handleAnnotationRoutes } from "./http/routes/annotations.js";
 import { handleRepairRequestRoutes } from "./http/routes/repair-requests.js";
 import { handleSessionRoutes } from "./http/routes/sessions.js";
+import { handleSourceResolutionRoutes } from "./http/routes/source-resolution.js";
 import { handleStabilityRoutes } from "./http/routes/stability.js";
+import { handleWorkspaceDiscoveryRoutes } from "./http/routes/workspace-discovery.js";
+import { handleWorkspaceRoutes } from "./http/routes/workspaces.js";
 import { sendError, setCorsHeaders } from "./http/shared.js";
 
 const ROUTES: HttpRouteHandler[] = [
   handleSessionRoutes,
+  handleWorkspaceRoutes,
+  handleWorkspaceDiscoveryRoutes,
   handleAnnotationRoutes,
   handleStabilityRoutes,
   handleRepairRequestRoutes,
+  handleSourceResolutionRoutes,
 ];
 
 export function createHttpHandler(store: DevPilotStore) {

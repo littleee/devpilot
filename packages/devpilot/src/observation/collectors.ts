@@ -18,11 +18,44 @@ export type DevPilotObservedStabilityInput = {
 export interface StartAutoObservationOptions {
   isWithinDevPilotTarget: (target: EventTarget | null) => boolean;
   recordObservedStabilityItem: (input: DevPilotObservedStabilityInput) => void;
+  shouldIgnoreNetworkRequest?: (request: {
+    source: "fetch" | "xhr";
+    method: string;
+    url: string;
+    headers?: HeadersInit;
+  }) => boolean;
+}
+
+function getHeaderValue(
+  headers: HeadersInit | undefined,
+  name: string,
+): string | undefined {
+  if (!headers) {
+    return undefined;
+  }
+
+  if (headers instanceof Headers) {
+    return headers.get(name) || undefined;
+  }
+
+  if (Array.isArray(headers)) {
+    const match = headers.find(([key]) => key.toLowerCase() === name.toLowerCase());
+    return match?.[1];
+  }
+
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === name.toLowerCase()) {
+      return value;
+    }
+  }
+
+  return undefined;
 }
 
 export function startAutoObservation({
   isWithinDevPilotTarget,
   recordObservedStabilityItem,
+  shouldIgnoreNetworkRequest,
 }: StartAutoObservationOptions): () => void {
   const onWindowError = (event: ErrorEvent) => {
     const target = event.target;
@@ -113,6 +146,17 @@ export function startAutoObservation({
               : String(input);
       const method =
         init?.method || (input instanceof Request ? input.method : "GET");
+      const headers =
+        init?.headers || (input instanceof Request ? input.headers : undefined);
+
+      if (shouldIgnoreNetworkRequest?.({
+        source: "fetch",
+        method: String(method || "GET"),
+        url,
+        headers,
+      })) {
+        return originalFetch(...args);
+      }
 
       try {
         const response = await originalFetch(...args);
@@ -186,6 +230,15 @@ export function startAutoObservation({
       const meta = xhrMeta.get(this);
       const method = meta?.method || "GET";
       const url = meta?.url || window.location.href;
+      const shouldIgnore = shouldIgnoreNetworkRequest?.({
+        source: "xhr",
+        method,
+        url,
+      });
+
+      if (shouldIgnore) {
+        return originalXhrSend.call(this, body);
+      }
 
       const cleanup = () => {
         this.removeEventListener("loadend", onLoadEnd);
@@ -259,4 +312,10 @@ export function startAutoObservation({
       xhrPrototype.send = originalXhrSend;
     }
   };
+}
+
+export function isDevPilotClientRequest(
+  headers: HeadersInit | undefined,
+): boolean {
+  return Boolean(getHeaderValue(headers, "X-DevPilot-Client-Id"));
 }

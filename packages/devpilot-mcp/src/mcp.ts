@@ -19,21 +19,30 @@ import { httpGet, httpPatch, httpPost, setHttpBaseUrl } from "./mcp/http-client.
 import {
   mapAnnotation,
   mapRepairRequest,
+  mapResolvedSource,
   mapSession,
   mapStabilityItem,
+  mapWorkspace,
 } from "./mcp/mappers.js";
 import {
   AnnotationIdSchema,
+  GetAgentPlaybookSchema,
   CompleteRepairRequestSchema,
   DismissRepairRequestSchema,
   DismissSchema,
   GetPendingSchema,
   GetSessionSchema,
+  GetSessionTaskPacketSchema,
   GetSessionStabilitySchema,
+  AutoDiscoverWorkspacesSchema,
+  RegisterWorkspaceSchema,
   RepairRequestIdSchema,
+  ResolveAnnotationSourceSchema,
   ReplySchema,
   ResolveSchema,
+  ResolveStabilitySourceSchema,
   ResolveStabilitySchema,
+  SourceSnippetSchema,
   StabilityItemIdSchema,
   TOOLS,
   WatchSchema,
@@ -46,6 +55,11 @@ import {
   watchForRepairRequests,
   watchForStabilityItems,
 } from "./mcp/watch.js";
+import { buildSessionTaskPacket } from "./mcp/task-packet.js";
+import {
+  buildAgentPlaybookBundle,
+  buildAgentWorkflowRecommendation,
+} from "./mcp/agent-playbook.js";
 
 function toolResult(data: unknown) {
   return {
@@ -60,6 +74,31 @@ function toolResult(data: unknown) {
 
 async function handleTool(name: string, input: unknown) {
   switch (name) {
+    case "devpilot_register_workspace": {
+      const payload = RegisterWorkspaceSchema.parse(input);
+      const response = await httpPost<{ workspace: import("./types.js").DevPilotWorkspaceRecord }>(
+        "/workspaces/register",
+        payload,
+      );
+      return toolResult({ workspace: mapWorkspace(response.workspace) });
+    }
+    case "devpilot_list_workspaces": {
+      const response = await httpGet<{ workspaces: import("./types.js").DevPilotWorkspaceRecord[] }>(
+        "/workspaces",
+      );
+      return toolResult({ workspaces: response.workspaces.map(mapWorkspace) });
+    }
+    case "devpilot_auto_discover_workspaces": {
+      const payload = AutoDiscoverWorkspacesSchema.parse(input);
+      const response = await httpPost<{
+        workspaces: import("./types.js").DevPilotWorkspaceRecord[];
+        persisted: boolean;
+      }>("/workspaces/auto-discover", payload);
+      return toolResult({
+        persisted: response.persisted,
+        workspaces: response.workspaces.map(mapWorkspace),
+      });
+    }
     case "devpilot_list_sessions": {
       const sessions = await httpGet<DevPilotSessionRecord[]>("/sessions");
       return toolResult({ sessions: sessions.map(mapSession) });
@@ -74,6 +113,85 @@ async function handleTool(name: string, input: unknown) {
         annotations: session.annotations.map(mapAnnotation),
         stabilityItems: session.stabilityItems.map(mapStabilityItem),
         repairRequests: session.repairRequests.map(mapRepairRequest),
+      });
+    }
+    case "devpilot_get_session_task_packet": {
+      const { sessionId, includeClosed } = GetSessionTaskPacketSchema.parse(input);
+      const session = await httpGet<DevPilotSessionWithAnnotations>(
+        `/sessions/${sessionId}`,
+      );
+      const workspaceResponse = await httpGet<{
+        workspaces: import("./types.js").DevPilotWorkspaceRecord[];
+      }>("/workspaces");
+      const { packet, repairRequests } = buildSessionTaskPacket(session, {
+        includeClosed,
+        workspaces: workspaceResponse.workspaces,
+      });
+      const workflow = buildAgentWorkflowRecommendation({
+        sessionId,
+        session: {
+          id: session.id,
+          title: session.title,
+          pathname: session.pathname,
+          url: session.url,
+        },
+        packet,
+        repairRequests,
+      });
+      return toolResult({
+        session: mapSession(session),
+        packet,
+        repairRequests,
+        workflow,
+      });
+    }
+    case "devpilot_get_agent_playbook": {
+      const {
+        sessionId,
+        mode,
+        includeClosed,
+        includePromptTemplate,
+      } = GetAgentPlaybookSchema.parse(input);
+
+      if (!sessionId) {
+        return toolResult(
+          buildAgentPlaybookBundle({
+            mode,
+            includePromptTemplate,
+          }),
+        );
+      }
+
+      const session = await httpGet<DevPilotSessionWithAnnotations>(
+        `/sessions/${sessionId}`,
+      );
+      const workspaceResponse = await httpGet<{
+        workspaces: import("./types.js").DevPilotWorkspaceRecord[];
+      }>("/workspaces");
+      const { packet, repairRequests } = buildSessionTaskPacket(session, {
+        includeClosed,
+        workspaces: workspaceResponse.workspaces,
+      });
+
+      return toolResult({
+        session: mapSession(session),
+        packet,
+        repairRequests,
+        ...buildAgentPlaybookBundle({
+          mode,
+          includePromptTemplate,
+          sessionContext: {
+            sessionId,
+            session: {
+              id: session.id,
+              title: session.title,
+              pathname: session.pathname,
+              url: session.url,
+            },
+            packet,
+            repairRequests,
+          },
+        }),
       });
     }
     case "devpilot_get_pending": {
@@ -132,6 +250,36 @@ async function handleTool(name: string, input: unknown) {
         `/repair-requests/${repairRequestId}`,
       );
       return toolResult({ request: mapRepairRequest(request) });
+    }
+    case "devpilot_resolve_annotation_source": {
+      const payload = ResolveAnnotationSourceSchema.parse(input);
+      const response = await httpPost<{ annotationId: string; matches: import("./types.js").DevPilotResolvedSource[] }>(
+        "/sources/resolve/annotation",
+        payload,
+      );
+      return toolResult({
+        annotationId: response.annotationId,
+        matches: response.matches.map(mapResolvedSource),
+      });
+    }
+    case "devpilot_resolve_stability_source": {
+      const payload = ResolveStabilitySourceSchema.parse(input);
+      const response = await httpPost<{ stabilityItemId: string; matches: import("./types.js").DevPilotResolvedSource[] }>(
+        "/sources/resolve/stability",
+        payload,
+      );
+      return toolResult({
+        stabilityItemId: response.stabilityItemId,
+        matches: response.matches.map(mapResolvedSource),
+      });
+    }
+    case "devpilot_get_source_snippet": {
+      const payload = SourceSnippetSchema.parse(input);
+      const response = await httpPost<{ snippet: import("./types.js").DevPilotSourceSnippet }>(
+        "/sources/snippet",
+        payload,
+      );
+      return toolResult({ snippet: response.snippet });
     }
     case "devpilot_acknowledge": {
       const { annotationId } = AnnotationIdSchema.parse(input);

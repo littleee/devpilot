@@ -1,8 +1,10 @@
 import type {
   DevPilotAnnotationRecord,
   DevPilotRepairRequestRecord,
+  DevPilotResolvedSource,
   DevPilotSessionRecord,
   DevPilotStabilityItemRecord,
+  DevPilotWorkspaceRecord,
 } from "../types.js";
 
 export function mapAnnotation(annotation: DevPilotAnnotationRecord) {
@@ -43,6 +45,17 @@ export function mapSession(session: DevPilotSessionRecord) {
   };
 }
 
+export function mapWorkspace(workspace: DevPilotWorkspaceRecord) {
+  return {
+    id: workspace.id,
+    name: workspace.name,
+    rootPath: workspace.rootPath,
+    devServerUrls: workspace.devServerUrls || [],
+    createdAt: workspace.createdAt,
+    updatedAt: workspace.updatedAt,
+  };
+}
+
 export function mapStabilityItem(item: DevPilotStabilityItemRecord) {
   return {
     id: item.id,
@@ -59,6 +72,21 @@ export function mapStabilityItem(item: DevPilotStabilityItemRecord) {
     context: item.context,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
+  };
+}
+
+export function mapResolvedSource(source: DevPilotResolvedSource) {
+  return {
+    workspaceId: source.workspaceId,
+    workspaceName: source.workspaceName,
+    workspaceRoot: source.workspaceRoot,
+    filePath: source.filePath,
+    relativePath: source.relativePath,
+    line: source.line,
+    column: source.column,
+    confidence: source.confidence,
+    strategy: source.strategy,
+    reason: source.reason,
   };
 }
 

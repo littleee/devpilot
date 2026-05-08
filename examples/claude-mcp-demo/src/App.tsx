@@ -27,14 +27,14 @@ function StepCard(props: { index: number; title: string; body: string; action?: 
 
 export default function App() {
   const [events, setEvents] = useState<DemoEvent[]>([
-    createEvent("Demo ready", "Open DevPilot, create annotations, then inspect them from Claude Code."),
+    createEvent("演示就绪", "打开 DevPilot，创建标注，然后在 Claude Code 中查看它们。"),
   ]);
 
   const promptExamples = useMemo(
     () => [
-      "List current DevPilot sessions and show the open annotations.",
-      "Summarize open stability items and suggest next repair steps.",
-      "Reply to the newest annotation with a short diagnosis and mark it acknowledged.",
+      "列出当前 DevPilot 会话并展示未处理的标注。",
+      "总结未处理的稳定性项并建议下一步修复操作。",
+      "回复最新的标注，附上简短诊断并将其标记为已确认。",
     ],
     [],
   );
@@ -46,51 +46,51 @@ export default function App() {
   return (
     <main className="page-shell">
       <section className="hero">
-        <p className="eyebrow">Claude Code + MCP integration demo</p>
+        <p className="eyebrow">Claude Code + MCP 集成演示</p>
         <h1>使用本地 Claude CLI 工作流测试 DevPilot</h1>
         <p className="hero-copy">
-          This page mounts the local <code>@littleee/devpilot</code> package against the
-          local <code>devpilot-mcp</code> bridge so annotations and stability signals can
-          flow into Claude Code through MCP.
+          本页面将本地 <code>@littleee/devpilot</code> 包挂载到本地
+          <code>devpilot-mcp</code> 桥接器，以便标注和稳定性信号可以通过 MCP
+          流入 Claude Code。
         </p>
         <div className="hero-meta">
-          <span>HTTP bridge: http://127.0.0.1:5213</span>
-          <span>MCP server: stdio via Claude CLI</span>
+          <span>HTTP 桥接器：http://127.0.0.1:5213</span>
+          <span>MCP 服务器：通过 Claude CLI 的 stdio</span>
         </div>
       </section>
 
       <section className="steps-grid">
         <StepCard
           index={1}
-          title="Run the bridge"
+          title="启动桥接器"
           body="启动本地 devpilot-mcp 服务器，以便浏览器工具栏可以同步会话、标注和稳定性项。"
         />
         <StepCard
           index={2}
-          title="Register Claude MCP"
-          body="Register the local stdio server with Claude Code, then open a Claude session from this repository."
+          title="注册 Claude MCP"
+          body="在 Claude Code 中注册本地 stdio 服务器，然后从本仓库打开一个 Claude 会话。"
         />
         <StepCard
           index={3}
-          title="Create signals"
-          body="Add page annotations or trigger runtime failures below, then ask Claude to read DevPilot sessions and pending work."
+          title="创建信号"
+          body="在下方添加页面标注或触发运行时错误，然后让 Claude 读取 DevPilot 会话和待处理的工作。"
           action={<button className="primary-button">保存</button>}
         />
       </section>
 
       <section className="panel-grid">
         <article className="panel-card">
-          <h2>Try in the browser</h2>
+          <h2>在浏览器中尝试</h2>
           <ul>
-            <li>xxx</li>
-            <li>Select text to verify text capture.</li>
-            <li>Hold Shift and drag to create grouped area annotations.</li>
-            <li>Open the stability panel and inspect auto-observed issues.</li>
+            <li>点击页面元素创建元素标注。</li>
+            <li>选中文本以验证文本捕获功能。</li>
+            <li>按住 Shift 并拖动以创建分组区域标注。</li>
+            <li>打开稳定性面板并检查自动观测到的问题。</li>
           </ul>
         </article>
 
         <article className="panel-card">
-          <h2>Current demo mode</h2>
+          <h2>当前演示模式</h2>
           <p className="panel-note">
             此页面在加载时会抛出一个真实的 JS 错误：
             <code>Cannot read properties of undefined (reading 'a')</code>。
@@ -101,24 +101,24 @@ export default function App() {
 
       <section className="content-grid">
         <article className="content-card">
-          <h3>Checkout Funnel</h3>
+          <h3>结账漏斗</h3>
           <p>
-            Use this card for area selection. It has enough nested structure to test
-            grouped annotation snapping and comment flow.
+            使用此卡片进行区域选择。它包含足够的嵌套结构，可用于测试
+            分组标注吸附和评论流程。
           </p>
           <button className="primary-button">xxx</button>
         </article>
 
         <article className="content-card">
-          <h3>Runtime Signals</h3>
+          <h3>运行时信号</h3>
           <p>
             当前页面在加载时会抛出一个真实的 JS 错误，供 DevPilot 捕获并通过 MCP 上报。
           </p>
-          <button className="secondary-button">Secondary Actions</button>
+          <button className="secondary-button">次要操作</button>
         </article>
 
         <article className="content-card">
-          <h3>Suggested Claude prompts</h3>
+          <h3>推荐的 Claude 提示词</h3>
           <div className="prompt-list">
             {promptExamples.map((prompt) => (
               <code key={prompt}>{prompt}</code>
@@ -129,12 +129,12 @@ export default function App() {
 
       <section className="log-panel">
         <div className="log-panel__header">
-          <h2>Recent local demo events</h2>
+          <h2>最近的本地演示事件</h2>
           <button
             className="ghost-button"
-            onClick={() => setEvents([createEvent("Log cleared", "Start generating new demo signals.")])}
+            onClick={() => setEvents([createEvent("日志已清空", "开始生成新的演示信号。")])}
           >
-            Reset log
+            重置日志
           </button>
         </div>
         <ul className="event-list">

@@ -20,8 +20,21 @@ export interface DevPilotStabilityContextSnapshot {
   };
   sessionId?: string;
   userAgent?: string;
+  platform?: string;
+  language?: string;
+  screen?: {
+    width: number;
+    height: number;
+  };
+  referrer?: string;
   openAnnotationCount: number;
   openAnnotationComments: string[];
+  openAnnotationSummaries?: Array<{
+    elementName: string;
+    elementPath: string;
+    comment: string;
+    kind?: string;
+  }>;
 }
 
 export interface DevPilotStabilityItemRecord {

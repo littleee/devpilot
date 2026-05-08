@@ -9,12 +9,23 @@ import type {
 } from "./stability-output";
 
 export type DevPilotTaskType = "annotation" | "stability" | "repair";
+export type DevPilotAgentIntent = "ui-fix" | "stability-fix" | "mixed-fix";
+export type DevPilotAgentPriority = "low" | "medium" | "high" | "critical";
+export type DevPilotAgentChangeScope = "targeted";
+export type DevPilotAgentExecutionMode = "safe-minimal-change";
 
 export interface DevPilotTaskPacketPageContext {
   title: string;
   url: string;
   pathname: string;
   viewport: { width: number; height: number };
+}
+
+export interface DevPilotTaskPacketSummary {
+  annotationCount: number;
+  stabilityCount: number;
+  totalIssueCount: number;
+  sourceHitCount: number;
 }
 
 export interface DevPilotTaskPacketTask {
@@ -38,11 +49,27 @@ export interface DevPilotTaskPacketContext {
   referrer?: string;
 }
 
+export interface DevPilotTaskPacketAgentBrief {
+  version: "1";
+  intent: DevPilotAgentIntent;
+  priority: DevPilotAgentPriority;
+  changeScope: DevPilotAgentChangeScope;
+  executionMode: DevPilotAgentExecutionMode;
+  primaryTargets: string[];
+  acceptanceCriteria: string[];
+  constraints: string[];
+  suggestedSteps: string[];
+  suggestedSearchQueries: string[];
+  outputContract: string[];
+}
+
 export interface DevPilotTaskPacket {
-  schema: "devpilot.task-packet/v1";
+  schema: "devpilot.task-packet/v2";
   generatedAt: string;
   page: DevPilotTaskPacketPageContext;
+  summary: DevPilotTaskPacketSummary;
   task: DevPilotTaskPacketTask;
+  agent: DevPilotTaskPacketAgentBrief;
   evidence: DevPilotTaskPacketEvidence;
   sourceHits?: string[];
   context?: DevPilotTaskPacketContext;
@@ -68,6 +95,13 @@ export interface DevPilotTaskPacketOptions {
 
 function normalizeInlineText(value: string): string {
   return value.trim().replace(/\s+/g, " ");
+}
+
+function toSentenceCase(value: string): string {
+  if (!value) {
+    return value;
+  }
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function computeSourceHitsFromAnnotations(annotations: DevPilotExportAnnotation[]): string[] {
@@ -132,6 +166,161 @@ function toExportStabilityItem(item: DevPilotStabilityItem, index: number): DevP
   };
 }
 
+function inferAgentIntent(
+  annotationCount: number,
+  stabilityCount: number,
+): DevPilotAgentIntent {
+  if (annotationCount > 0 && stabilityCount > 0) {
+    return "mixed-fix";
+  }
+  if (stabilityCount > 0) {
+    return "stability-fix";
+  }
+  return "ui-fix";
+}
+
+function inferAgentPriority(
+  annotations: DevPilotExportAnnotation[],
+  stabilityItems: DevPilotStabilityExportItem[],
+): DevPilotAgentPriority {
+  if (stabilityItems.some((item) => item.severity === "critical")) {
+    return "critical";
+  }
+  if (
+    stabilityItems.some((item) => item.severity === "high") ||
+    annotations.length >= 4
+  ) {
+    return "high";
+  }
+  if (stabilityItems.length > 0 || annotations.length >= 2) {
+    return "medium";
+  }
+  return "low";
+}
+
+function collectPrimaryTargets(
+  annotations: DevPilotExportAnnotation[],
+  stabilityItems: DevPilotStabilityExportItem[],
+  sourceHits: string[],
+): string[] {
+  const targets = new Set<string>();
+
+  annotations.forEach((annotation) => {
+    if (annotation.context?.componentHints?.length) {
+      annotation.context.componentHints.forEach((name) => targets.add(`component:${name}`));
+    }
+    if (annotation.elementPath) {
+      targets.add(`selector:${annotation.elementPath}`);
+    }
+  });
+
+  stabilityItems.forEach((item) => {
+    targets.add(`issue:${item.title}`);
+    if (item.context.openAnnotationSummaries?.length) {
+      item.context.openAnnotationSummaries.forEach((summary) => {
+        targets.add(`selector:${summary.elementPath}`);
+      });
+    }
+  });
+
+  sourceHits.forEach((hit) => targets.add(hit));
+
+  return Array.from(targets).slice(0, 12);
+}
+
+function buildAcceptanceCriteria(
+  annotations: DevPilotExportAnnotation[],
+  stabilityItems: DevPilotStabilityExportItem[],
+  desiredOutcome: string,
+): string[] {
+  const criteria = new Set<string>();
+  criteria.add(normalizeInlineText(desiredOutcome));
+
+  if (annotations.length > 0) {
+    criteria.add("The annotated UI issues are fixed in the referenced page regions.");
+    criteria.add("The updated UI still matches the intended element, text, or grouped area called out in the evidence.");
+  }
+
+  if (stabilityItems.length > 0) {
+    criteria.add("The referenced runtime failures are resolved or safely handled.");
+    criteria.add("The user flow no longer breaks when the failing runtime path is exercised.");
+  }
+
+  criteria.add("No unrelated behavior changes are introduced outside the described scope.");
+
+  return Array.from(criteria);
+}
+
+function buildSuggestedSearchQueries(
+  annotations: DevPilotExportAnnotation[],
+  stabilityItems: DevPilotStabilityExportItem[],
+  sourceHits: string[],
+): string[] {
+  const queries = new Set<string>();
+
+  sourceHits.slice(0, 6).forEach((hit) => queries.add(hit));
+
+  annotations.forEach((annotation) => {
+    annotation.context?.componentHints?.forEach((name) => queries.add(name));
+    annotation.context?.selectorCandidates?.slice(0, 2).forEach((candidate) => queries.add(candidate));
+    if (annotation.nearbyText) {
+      queries.add(normalizeInlineText(annotation.nearbyText).slice(0, 80));
+    }
+  });
+
+  stabilityItems.forEach((item) => {
+    queries.add(item.title);
+    if (item.symptom) {
+      queries.add(normalizeInlineText(item.symptom).slice(0, 120));
+    }
+  });
+
+  return Array.from(queries).filter(Boolean).slice(0, 12);
+}
+
+function buildSuggestedSteps(intent: DevPilotAgentIntent): string[] {
+  const steps = [
+    "Inspect the evidence and confirm which page region, element, or runtime failure is in scope.",
+    "Use source hits, selectors, component names, nearby text, and runtime signals to locate the relevant code.",
+    "Confirm the exact fix target before editing by matching page structure, copy, and captured context.",
+    "Apply the smallest safe change that resolves the issue without widening scope.",
+    "Validate the affected flow and summarize changed files, checks performed, and any residual risk.",
+  ];
+
+  if (intent !== "ui-fix") {
+    steps.splice(
+      3,
+      0,
+      "Trace the failing runtime path first and prefer fixing the root cause over masking the symptom.",
+    );
+  }
+
+  return steps;
+}
+
+function buildConstraints(intent: DevPilotAgentIntent): string[] {
+  const constraints = [
+    "Prefer targeted edits over refactors unless a refactor is required to safely fix the issue.",
+    "Preserve existing behavior outside the reported scope.",
+    "Do not change unrelated copy, styling, or network behavior while fixing this task.",
+  ];
+
+  if (intent !== "ui-fix") {
+    constraints.push("Keep error handling user-safe: recover gracefully instead of silently swallowing failures.");
+  }
+
+  return constraints;
+}
+
+function buildOutputContract(): string[] {
+  return [
+    "List the files changed.",
+    "Explain how the fix addresses the evidence.",
+    "Describe the validation steps you ran or the checks you could not run.",
+    "Call out any remaining risks, assumptions, or follow-up work.",
+  ];
+}
+
 export function createDevPilotTaskPacket(options: DevPilotTaskPacketOptions): DevPilotTaskPacket {
   const resolvedViewport = options.viewport || {
     width: typeof window === "undefined" ? 0 : window.innerWidth,
@@ -147,10 +336,27 @@ export function createDevPilotTaskPacket(options: DevPilotTaskPacketOptions): De
 
   const exportStabilityItems = options.stabilityItems?.map((item, i) =>
     toExportStabilityItem(item, i),
+  ) || [];
+  const intent = inferAgentIntent(exportAnnotations.length, exportStabilityItems.length);
+  const priority = inferAgentPriority(exportAnnotations, exportStabilityItems);
+  const acceptanceCriteria = buildAcceptanceCriteria(
+    exportAnnotations,
+    exportStabilityItems,
+    options.desiredOutcome,
+  );
+  const primaryTargets = collectPrimaryTargets(
+    exportAnnotations,
+    exportStabilityItems,
+    allSourceHits,
+  );
+  const suggestedSearchQueries = buildSuggestedSearchQueries(
+    exportAnnotations,
+    exportStabilityItems,
+    allSourceHits,
   );
 
   return {
-    schema: "devpilot.task-packet/v1",
+    schema: "devpilot.task-packet/v2",
     generatedAt: new Date().toISOString(),
     page: {
       title:
@@ -162,15 +368,34 @@ export function createDevPilotTaskPacket(options: DevPilotTaskPacketOptions): De
       pathname: options.pathname,
       viewport: resolvedViewport,
     },
+    summary: {
+      annotationCount: exportAnnotations.length,
+      stabilityCount: exportStabilityItems.length,
+      totalIssueCount: exportAnnotations.length + exportStabilityItems.length,
+      sourceHitCount: allSourceHits.length,
+    },
     task: {
       type: options.type,
       title: options.taskTitle,
       description: options.description,
       desiredOutcome: options.desiredOutcome,
     },
+    agent: {
+      version: "1",
+      intent,
+      priority,
+      changeScope: "targeted",
+      executionMode: "safe-minimal-change",
+      primaryTargets,
+      acceptanceCriteria,
+      constraints: buildConstraints(intent),
+      suggestedSteps: buildSuggestedSteps(intent),
+      suggestedSearchQueries,
+      outputContract: buildOutputContract(),
+    },
     evidence: {
       annotations: exportAnnotations,
-      stabilityItems: exportStabilityItems,
+      stabilityItems: exportStabilityItems.length > 0 ? exportStabilityItems : undefined,
       runtimeSignals: options.runtimeSignals,
     },
     sourceHits: allSourceHits,
@@ -338,13 +563,41 @@ export function formatDevPilotTaskPacketMarkdown(packet: DevPilotTaskPacket): st
     `**Path:** ${packet.page.pathname}`,
     `**Viewport:** ${packet.page.viewport.width}x${packet.page.viewport.height}`,
     ``,
+    `## Summary`,
+    `**Issues:** ${packet.summary.totalIssueCount} total · ${packet.summary.annotationCount} annotation · ${packet.summary.stabilityCount} stability`,
+    `**Source Hits:** ${packet.summary.sourceHitCount}`,
+    ``,
     `## Task`,
     `**Type:** ${packet.task.type}`,
     `**Title:** ${packet.task.title}`,
     `**Description:** ${packet.task.description}`,
     `**Desired Outcome:** ${packet.task.desiredOutcome}`,
     ``,
+    `## Agent Brief`,
+    `**Intent:** ${packet.agent.intent}`,
+    `**Priority:** ${packet.agent.priority}`,
+    `**Change Scope:** ${packet.agent.changeScope}`,
+    `**Execution Mode:** ${packet.agent.executionMode}`,
+    ``,
   ];
+
+  if (packet.agent.primaryTargets.length > 0) {
+    lines.push(`### Primary Targets`);
+    packet.agent.primaryTargets.forEach((target) => lines.push(`- ${target}`));
+    lines.push("");
+  }
+
+  if (packet.agent.acceptanceCriteria.length > 0) {
+    lines.push(`### Acceptance Criteria`);
+    packet.agent.acceptanceCriteria.forEach((criterion) => lines.push(`- ${criterion}`));
+    lines.push("");
+  }
+
+  if (packet.agent.constraints.length > 0) {
+    lines.push(`### Constraints`);
+    packet.agent.constraints.forEach((constraint) => lines.push(`- ${constraint}`));
+    lines.push("");
+  }
 
   if (packet.evidence.annotations.length > 0) {
     const groups = buildRegionGroups(packet.evidence.annotations);
@@ -384,18 +637,24 @@ export function formatDevPilotTaskPacketMarkdown(packet: DevPilotTaskPacket): st
   }
 
   lines.push(`## Search Hints for AI`);
+  if (packet.agent.suggestedSearchQueries.length > 0) {
+    packet.agent.suggestedSearchQueries.forEach((query) => {
+      lines.push(`- Search for ${query.includes(" ") ? `"${query}"` : `\`${query}\``}`);
+    });
+  }
   lines.push(`- Start from the source hits first; they are the best candidate files or components.`);
   lines.push(`- If source hits are weak, search by selector candidates, component names, nearby text, and data attributes.`);
   lines.push(`- Use the screen region and grouped element list to confirm you are fixing the intended UI, not a similarly named control elsewhere.`);
   lines.push("");
 
   lines.push(`## Instructions for AI`);
-  lines.push(`1. Analyze the evidence above to understand the issue.`);
-  lines.push(`2. Use the source hits, selectors, component hints, nearby text, and data attributes to locate relevant code files.`);
-  lines.push(`3. Confirm the fix target by matching the page region, text content, and element grouping before editing code.`);
-  lines.push(`4. Make the smallest safe change that achieves the desired outcome.`);
-  lines.push(`5. Preserve existing behavior outside the fix scope.`);
-  lines.push(`6. Summarize changed files, validation steps, and any remaining risks.`);
+  packet.agent.suggestedSteps.forEach((step, index) => {
+    lines.push(`${index + 1}. ${toSentenceCase(step)}`);
+  });
+  lines.push("");
+
+  lines.push(`## Output Contract`);
+  packet.agent.outputContract.forEach((item) => lines.push(`- ${item}`));
 
   return lines.join("\n").trim();
 }

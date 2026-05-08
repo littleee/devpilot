@@ -4,7 +4,7 @@ import { useI18n } from "../i18n";
 import type { DevPilotLocale } from "../i18n/dict";
 import { CollapseIcon } from "./icons";
 
-type SseStatus = "disabled" | "connecting" | "connected" | "reconnecting";
+type SseStatus = "disabled" | "connecting" | "connected" | "reconnecting" | "error";
 
 interface SettingsPanelProps {
   panelLeft: number;

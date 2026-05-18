@@ -2,7 +2,7 @@
 
 **English | [中文](README.zh-CN.md)**
 
-`@littleee/devpilot` is a page-native frontend copilot for turning what happens in the browser into actionable engineering work.
+`@didi/devpilot` is a page-native frontend copilot for turning what happens in the browser into actionable engineering work.
 
 The long-term goal is a single workflow that can:
 
@@ -105,7 +105,7 @@ DevPilot is being built toward a broader frontend incident and repair workflow:
 The published npm package is:
 
 ```bash
-npm install @littleee/devpilot
+npm install @didi/devpilot
 ```
 
 Right now the package exports the `DevPilot` mounting API and UI components.
@@ -130,7 +130,7 @@ Most users should be able to start in local mode without any backend setup.
 Zero-config mount (local mode only — no backend needed):
 
 ```ts
-import { mountDevPilot } from "@littleee/devpilot";
+import { mountDevPilot } from "@didi/devpilot";
 
 mountDevPilot();
 ```
@@ -138,7 +138,7 @@ mountDevPilot();
 React:
 
 ```tsx
-import { DevPilot } from "@littleee/devpilot";
+import { DevPilot } from "@didi/devpilot";
 
 export function App() {
   return (
@@ -162,15 +162,15 @@ mountDevPilot({
 });
 ```
 
-> You must also run the [`@littleee/devpilot-mcp`](./packages/devpilot-mcp) bridge locally for connected mode.
+> You must also run the [`@didi/devpilot-mcp`](./packages/devpilot-mcp) bridge locally for connected mode.
 
 ## Connected Agent Flow
 
-When `@littleee/devpilot-mcp` is running, Claude, Codex, or another MCP-compatible agent can pull the same standardized brief that DevPilot exports in local mode.
+When `@didi/devpilot-mcp` is running, Claude, Codex, or another MCP-compatible agent can pull the same standardized brief that DevPilot exports in local mode.
 
 Recommended flow:
 
-1. Start the local bridge with `npx -y @littleee/devpilot-mcp server`
+1. Start the local bridge with `npx -y @didi/devpilot-mcp server`
 2. Connect your coding agent to the DevPilot MCP server
 3. Prefer `devpilot_auto_discover_workspaces`; use `devpilot_register_workspace` only when you need to correct or add a workspace manually
 4. Call `devpilot_list_sessions` to find the active browser session
@@ -188,7 +188,7 @@ Remote sync stays opt-in. Passing an `endpoint` alone does not enable MCP sync; 
 
 Current workspace contents:
 
-- `packages/devpilot`: the published browser toolbar package behind `@littleee/devpilot`
+- `packages/devpilot`: the published browser toolbar package behind `@didi/devpilot`
 
 ## Development
 

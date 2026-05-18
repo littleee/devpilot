@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2024-04-10
 
 ### Added
-- Initial release of `@littleee/devpilot` browser toolbar package.
+- Initial release of `@didi/devpilot` browser toolbar package.
 - Annotation system with element, text, and area selection modes.
 - Stability issue tracking with auto-observation of JS errors and failed fetches.
 - Remote session sync via SSE with localStorage persistence.

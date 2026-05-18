@@ -137,7 +137,7 @@ const messages = {
     "announce.zhItem2":
       "Optional Stability Copilot for runtime errors and failed requests.",
     "announce.zhItem3":
-      "First public release of `@littleee/devpilot-mcp` as the local bridge and MCP server.",
+      "First public release of `@didi/devpilot-mcp` as the local bridge and MCP server.",
     "announce.enTitle": "English launch copy",
     "announce.enBody1": "DevPilot Beta is now available.",
     "announce.enBody2":
@@ -147,7 +147,7 @@ const messages = {
     "announce.enItem2":
       "Optional Stability Copilot for runtime errors and failed requests.",
     "announce.enItem3":
-      "First public release of `@littleee/devpilot-mcp` as the local bridge and MCP server.",
+      "First public release of `@didi/devpilot-mcp` as the local bridge and MCP server.",
     "start.eyebrow": "Getting Started",
     "start.title": "Install DevPilot and use the local workflow.",
     "start.subtitle":
@@ -343,7 +343,7 @@ const messages = {
     "announce.zhItem2":
       "可选的 Stability Copilot，用于运行时错误与请求失败问题。",
     "announce.zhItem3":
-      "首个公开的 `@littleee/devpilot-mcp` 包，作为本地 bridge 与 MCP server。",
+      "首个公开的 `@didi/devpilot-mcp` 包，作为本地 bridge 与 MCP server。",
     "announce.enTitle": "English launch copy",
     "announce.enBody1": "DevPilot Beta is now available.",
     "announce.enBody2":
@@ -353,7 +353,7 @@ const messages = {
     "announce.enItem2":
       "Optional Stability Copilot for runtime errors and failed requests.",
     "announce.enItem3":
-      "First public release of `@littleee/devpilot-mcp` as the local bridge and MCP server.",
+      "First public release of `@didi/devpilot-mcp` as the local bridge and MCP server.",
     "start.eyebrow": "快速开始",
     "start.title": "安装 DevPilot，并走通本地主流程。",
     "start.subtitle":

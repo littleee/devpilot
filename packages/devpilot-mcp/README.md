@@ -1,6 +1,6 @@
-# @littleee/devpilot-mcp
+# @didi/devpilot-mcp
 
-`@littleee/devpilot-mcp` 是 `DevPilot` 的本地 bridge 与 MCP 服务包。
+`@didi/devpilot-mcp` 是 `DevPilot` 的本地 bridge 与 MCP 服务包。
 
 **只在「连接模式」时才需要安装。** 如果你只用 DevPilot 的标注和「复制给AI」功能，不需要装这个包。
 
@@ -18,13 +18,13 @@
 ## 安装
 
 ```bash
-npm install @littleee/devpilot-mcp
+npm install @didi/devpilot-mcp
 ```
 
 ## 启动
 
 ```bash
-npx -y @littleee/devpilot-mcp server
+npx -y @didi/devpilot-mcp server
 ```
 
 默认会优先使用 `5213` 端口；如果这个端口已被占用，会自动尝试下一个可用端口。  
@@ -33,19 +33,19 @@ npx -y @littleee/devpilot-mcp server
 也可以只启动 MCP stdio，并指向一个已存在的 HTTP bridge：
 
 ```bash
-npx -y @littleee/devpilot-mcp server --mcp-only --http-url http://localhost:5213
+npx -y @didi/devpilot-mcp server --mcp-only --http-url http://localhost:5213
 ```
 
 如果你希望把本地 bridge 常驻运行，再让不同 agent 单独连接，也可以只启动 HTTP：
 
 ```bash
-npx -y @littleee/devpilot-mcp server --http-only --port 5213
+npx -y @didi/devpilot-mcp server --http-only --port 5213
 ```
 
 或者先全局安装再直接运行：
 
 ```bash
-npm install -g @littleee/devpilot-mcp
+npm install -g @didi/devpilot-mcp
 devpilot-mcp server
 ```
 
@@ -56,13 +56,13 @@ devpilot-mcp server
 推荐优先使用 Claude CLI 来注册，不要手动猜配置文件路径。最稳的全局注册方式是：
 
 ```bash
-claude mcp add --scope user devpilot-mcp -- npx -y @littleee/devpilot-mcp server --mcp-only --http-url http://127.0.0.1:5213
+claude mcp add --scope user devpilot-mcp -- npx -y @didi/devpilot-mcp server --mcp-only --http-url http://127.0.0.1:5213
 ```
 
 这条命令的含义是：
 
 - `--scope user`：把 `devpilot-mcp` 注册成 Claude 的全局 MCP
-- `npx -y @littleee/devpilot-mcp ...`：不需要先全局安装 npm 包
+- `npx -y @didi/devpilot-mcp ...`：不需要先全局安装 npm 包
 - `--mcp-only --http-url ...`：Claude 只启动 MCP stdio，并连接你已经跑起来的本地 HTTP bridge
 
 如果你想移除这条全局注册：
@@ -82,7 +82,7 @@ claude mcp remove --scope user devpilot-mcp
   "mcpServers": {
     "devpilot": {
       "command": "npx",
-      "args": ["-y", "@littleee/devpilot-mcp", "server"]
+      "args": ["-y", "@didi/devpilot-mcp", "server"]
     }
   }
 }
@@ -90,7 +90,7 @@ claude mcp remove --scope user devpilot-mcp
 
 这条配置的含义是：
 
-- Claude 会通过 `npx` 在需要时启动 `@littleee/devpilot-mcp`
+- Claude 会通过 `npx` 在需要时启动 `@didi/devpilot-mcp`
 - `server` 会同时启动本地 HTTP bridge 和 stdio MCP server
 - 默认会优先使用 `5213` 端口；如果端口被占用且你没有显式传 `--port`，会自动回退到下一个可用端口
 
@@ -101,7 +101,7 @@ claude mcp remove --scope user devpilot-mcp
   "mcpServers": {
     "devpilot": {
       "command": "npx",
-      "args": ["-y", "@littleee/devpilot-mcp", "server", "--port", "5213"]
+      "args": ["-y", "@didi/devpilot-mcp", "server", "--port", "5213"]
     }
   }
 }
@@ -114,7 +114,7 @@ claude mcp remove --scope user devpilot-mcp
   "mcpServers": {
     "devpilot": {
       "command": "npx",
-      "args": ["-y", "@littleee/devpilot-mcp", "server", "--mcp-only", "--http-url", "http://127.0.0.1:5213"]
+      "args": ["-y", "@didi/devpilot-mcp", "server", "--mcp-only", "--http-url", "http://127.0.0.1:5213"]
     }
   }
 }
@@ -127,7 +127,7 @@ claude mcp remove --scope user devpilot-mcp
 在业务页面里把 `DevPilot` 挂到同一个本地 bridge：
 
 ```ts
-import { mountDevPilot } from "@littleee/devpilot";
+import { mountDevPilot } from "@didi/devpilot";
 
 mountDevPilot({
   endpoint: "http://localhost:5213",

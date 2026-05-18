@@ -1,6 +1,6 @@
 # DevPilot
 
-`@littleee/devpilot` is the published package for the DevPilot browser workflow.
+`@didi/devpilot` is the published package for the DevPilot browser workflow.
 
 Today, the package exposes `DevPilot`: a page-native toolbar for collecting UI feedback in the browser and exporting it as structured context for AI-assisted code changes.
 
@@ -9,7 +9,7 @@ Over time, DevPilot is intended to grow beyond annotation into MCP-powered code 
 ## Install
 
 ```bash
-npm install @littleee/devpilot
+npm install @didi/devpilot
 ```
 
 `react` and `react-dom` are required peer dependencies.
@@ -40,7 +40,7 @@ You do not need MCP to get value from the package. In local mode, DevPilot can a
 ## Zero-config Mount
 
 ```ts
-import { mountDevPilot } from "@littleee/devpilot";
+import { mountDevPilot } from "@didi/devpilot";
 
 mountDevPilot();
 ```
@@ -90,7 +90,7 @@ When `mcp` is enabled and an endpoint is provided, DevPilot syncs annotations an
 
 ## Product Modes
 
-`@littleee/devpilot` supports two practical modes:
+`@didi/devpilot` supports two practical modes:
 
 - `Local mode`
   - annotation and AI handoff only
@@ -102,7 +102,7 @@ When `mcp` is enabled and an endpoint is provided, DevPilot syncs annotations an
 ## React
 
 ```tsx
-import { DevPilot } from "@littleee/devpilot";
+import { DevPilot } from "@didi/devpilot";
 
 export function App() {
   return (
@@ -118,7 +118,7 @@ export function App() {
 
 ```ts
 import { createApp } from "vue";
-import { mountDevPilot } from "@littleee/devpilot";
+import { mountDevPilot } from "@didi/devpilot";
 import App from "./App.vue";
 
 createApp(App).mount("#app");
@@ -127,7 +127,7 @@ mountDevPilot();
 
 ## Current Scope
 
-`@littleee/devpilot` is meant to stay useful even before the full connected workflow is enabled:
+`@didi/devpilot` is meant to stay useful even before the full connected workflow is enabled:
 
 - `Core`: page annotation and AI handoff
 - `Core + Stability`: issue capture, observation, and explicit repair requests

@@ -49,7 +49,7 @@ export default function App() {
         <p className="eyebrow">Claude Code + MCP 集成演示</p>
         <h1>使用本地 Claude CLI 工作流测试 DevPilot</h1>
         <p className="hero-copy">
-          本页面将本地 <code>@littleee/devpilot</code> 包挂载到本地
+          本页面将本地 <code>@didi/devpilot</code> 包挂载到本地
           <code>devpilot-mcp</code> 桥接器，以便标注和稳定性信号可以通过 MCP
           流入 Claude Code。
         </p>

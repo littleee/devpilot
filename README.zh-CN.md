@@ -2,7 +2,7 @@
 
 **[English](README.md) | 中文**
 
-`@littleee/devpilot` 是一个页面原生的前端副驾工具，能把浏览器里发生的事情变成可执行的前端工程任务。
+`@didi/devpilot` 是一个页面原生的前端副驾工具，能把浏览器里发生的事情变成可执行的前端工程任务。
 
 长期目标是打造一条完整工作流，能够：
 
@@ -105,7 +105,7 @@ DevPilot 正在朝着更广泛的前端事件与修复工作流演进：
 已发布的 npm 包：
 
 ```bash
-npm install @littleee/devpilot
+npm install @didi/devpilot
 ```
 
 目前该包导出了 `DevPilot` 挂载 API 和 UI 组件。
@@ -130,7 +130,7 @@ DevPilot 是一个产品，两种使用模式：
 零配置挂载（仅本地模式 —— 不需要后端）：
 
 ```ts
-import { mountDevPilot } from "@littleee/devpilot";
+import { mountDevPilot } from "@didi/devpilot";
 
 mountDevPilot();
 ```
@@ -138,7 +138,7 @@ mountDevPilot();
 React：
 
 ```tsx
-import { DevPilot } from "@littleee/devpilot";
+import { DevPilot } from "@didi/devpilot";
 
 export function App() {
   return (
@@ -162,15 +162,15 @@ mountDevPilot({
 });
 ```
 
-> 连接模式还需要在本地运行 [`@littleee/devpilot-mcp`](./packages/devpilot-mcp) bridge。
+> 连接模式还需要在本地运行 [`@didi/devpilot-mcp`](./packages/devpilot-mcp) bridge。
 
 ## 连接模式下的 Agent 工作流
 
-当 `@littleee/devpilot-mcp` 正在运行时，Claude、Codex 或其他兼容 MCP 的 agent 可以直接拿到和本地复制流程一致的标准化 brief。
+当 `@didi/devpilot-mcp` 正在运行时，Claude、Codex 或其他兼容 MCP 的 agent 可以直接拿到和本地复制流程一致的标准化 brief。
 
 推荐顺序：
 
-1. 用 `npx -y @littleee/devpilot-mcp server` 启动本地 bridge
+1. 用 `npx -y @didi/devpilot-mcp server` 启动本地 bridge
 2. 把你的 coding agent 连接到 DevPilot MCP server
 3. 优先调用 `devpilot_auto_discover_workspaces` 自动发现本地项目根目录；只有需要修正时再用 `devpilot_register_workspace`
 4. 调用 `devpilot_list_sessions` 找到当前活跃浏览器会话
@@ -188,7 +188,7 @@ mountDevPilot({
 
 当前工作空间内容：
 
-- `packages/devpilot`：已发布的浏览器工具条包，即 `@littleee/devpilot`
+- `packages/devpilot`：已发布的浏览器工具条包，即 `@didi/devpilot`
 
 ## 开发
 

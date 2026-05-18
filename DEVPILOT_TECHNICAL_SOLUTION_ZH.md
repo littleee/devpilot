@@ -111,7 +111,7 @@
 当前对外入口已经收口为零配置挂载形式：
 
 ```ts
-import { mountDevPilot } from "@littleee/devpilot";
+import { mountDevPilot } from "@didi/devpilot";
 
 mountDevPilot();
 ```
@@ -122,7 +122,7 @@ mountDevPilot();
 
 ### 5.1 已实现
 
-- `@littleee/devpilot` 浏览器端前端包
+- `@didi/devpilot` 浏览器端前端包
 - Shadow DOM 挂载与样式隔离
 - launcher、toolbar、overlay、marker、popup、session panel
 - 元素标注、文本标注、区域标注
@@ -468,12 +468,12 @@ flowchart TD
 
 ## 9.9 零配置接入与 npm 包化方案
 
-当前包已经收口为 `@littleee/devpilot`。
+当前包已经收口为 `@didi/devpilot`。
 
 接入方式：
 
 ```ts
-import { mountDevPilot } from "@littleee/devpilot";
+import { mountDevPilot } from "@didi/devpilot";
 
 mountDevPilot();
 ```

@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@littleee/devpilot": "file:../../packages/devpilot",
+    "@didi/devpilot": "file:../../packages/devpilot",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

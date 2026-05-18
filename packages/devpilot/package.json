@@ -1,5 +1,5 @@
 {
-  "name": "@littleee/devpilot",
+  "name": "@didi/devpilot",
   "version": "0.2.0",
   "description": "A page-native annotation toolbar for collecting UI feedback and exporting it for AI-assisted code changes.",
   "license": "MIT",
@@ -9,12 +9,8 @@
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/littleee/devpilot.git",
+    "url": "git+https://git.xiaojukeji.com/liubochao/devpilot.git",
     "directory": "packages/devpilot"
-  },
-  "homepage": "https://github.com/littleee/devpilot/tree/main/packages/devpilot",
-  "bugs": {
-    "url": "https://github.com/littleee/devpilot/issues"
   },
   "keywords": [
     "annotation",

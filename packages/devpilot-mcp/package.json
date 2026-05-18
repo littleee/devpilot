@@ -1,5 +1,5 @@
 {
-  "name": "@littleee/devpilot-mcp",
+  "name": "@didi/devpilot-mcp",
   "version": "0.1.0",
   "type": "module",
   "description": "Local HTTP bridge and MCP server for DevPilot annotations.",
@@ -8,12 +8,7 @@
   "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/littleee/devpilot.git",
     "directory": "packages/devpilot-mcp"
-  },
-  "homepage": "https://github.com/littleee/devpilot/tree/main/packages/devpilot-mcp",
-  "bugs": {
-    "url": "https://github.com/littleee/devpilot/issues"
   },
   "keywords": [
     "mcp",

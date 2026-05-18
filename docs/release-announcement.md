@@ -15,7 +15,7 @@ DevPilot 是一个把浏览器问题转成 AI 可执行前端任务的产品。�
 
 - 更强的 AI handoff task packet，带 selector、上下文、分组元素和源码线索
 - 可选的 Stability Copilot，用于运行时错误与请求失败问题
-- 首个公开的 `@littleee/devpilot-mcp` 包，作为本地 bridge 与 MCP server
+- 首个公开的 `@didi/devpilot-mcp` 包，作为本地 bridge 与 MCP server
 - 更清晰的设置结构与更稳定的连接体验
 
 适合谁现在开始用：
@@ -26,9 +26,8 @@ DevPilot 是一个把浏览器问题转成 AI 可执行前端任务的产品。�
 
 相关链接：
 
-- npm: `@littleee/devpilot`
-- npm: `@littleee/devpilot-mcp`
-- GitHub: `littleee/devpilot`
+- npm: `@didi/devpilot`
+- npm: `@didi/devpilot-mcp`
 
 ## English
 
@@ -45,7 +44,7 @@ Highlights in this release:
 
 - richer AI handoff task packets with selectors, grouped context, and source hints
 - optional Stability Copilot for runtime errors and failed requests
-- first public release of `@littleee/devpilot-mcp` as the local bridge and MCP server
+- first public release of `@didi/devpilot-mcp` as the local bridge and MCP server
 - cleaner settings structure and more reliable connected-mode behavior
 
 This beta is a good fit for:
@@ -56,6 +55,6 @@ This beta is a good fit for:
 
 Related links:
 
-- npm: `@littleee/devpilot`
-- npm: `@littleee/devpilot-mcp`
-- GitHub: `littleee/devpilot`
+- npm: `@didi/devpilot`
+- npm: `@didi/devpilot-mcp`
+- GitHub: `liubochao/devpilot`

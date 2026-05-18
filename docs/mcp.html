@@ -23,7 +23,7 @@
           <a href="./" data-i18n="nav.home">Home</a>
           <a href="./getting-started.html" data-i18n="nav.start">Getting Started</a>
           <a class="active" href="./mcp.html" data-i18n="nav.mcp">MCP Setup</a>
-          <a href="https://github.com/littleee/devpilot">GitHub</a>
+          <a href="https://git.xiaojukeji.com/liubochao/devpilot">GitHub</a>
         </nav>
         <div class="language-switch">
           <button id="lang-trigger" class="lang-trigger" type="button" aria-haspopup="true" aria-expanded="false">
@@ -66,7 +66,7 @@
           <div class="content">
             <section id="run" class="card">
               <h2 data-i18n="mcpDoc.runTitle">1. Start the MCP bridge</h2>
-              <div class="code-block"><pre><code>npx @littleee/devpilot-mcp server</code></pre></div>
+              <div class="code-block"><pre><code>npx @didi/devpilot-mcp server</code></pre></div>
               <p data-i18n="mcpDoc.runBody">
                 This command starts the local HTTP bridge and the MCP server in one process.
               </p>
@@ -103,13 +103,13 @@
                 Point your coding agent to the DevPilot MCP server, then let it inspect sessions, read pending annotations, or work through repair requests.
               </p>
               <div class="code-block">
-                <pre><code>npx @littleee/devpilot-mcp server --mcp-only --http-url http://localhost:5213</code></pre>
+                <pre><code>npx @didi/devpilot-mcp server --mcp-only --http-url http://localhost:5213</code></pre>
               </div>
               <p data-i18n="mcpDoc.agentsRegisterBody">
                 To register DevPilot MCP globally in Claude Code, add it with user scope:
               </p>
               <div class="code-block">
-                <pre><code>claude mcp add --scope user devpilot-mcp -- npx @littleee/devpilot-mcp server --mcp-only --http-url http://localhost:5213</code></pre>
+                <pre><code>claude mcp add --scope user devpilot-mcp -- npx @didi/devpilot-mcp server --mcp-only --http-url http://localhost:5213</code></pre>
               </div>
               <p data-i18n="mcpDoc.agentsRegisterNote">
                 Claude does not discover DevPilot automatically. The command above writes a global MCP entry for Claude on this machine. If your bridge falls back to another port, replace 5213 with the actual port.
@@ -126,7 +126,7 @@
   "mcpServers": {
     "devpilot": {
       "command": "npx",
-      "args": ["-y", "@littleee/devpilot-mcp", "server"]
+      "args": ["-y", "@didi/devpilot-mcp", "server"]
     }
   }
 }</code></pre>

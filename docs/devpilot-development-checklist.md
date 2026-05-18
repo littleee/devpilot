@@ -1,6 +1,6 @@
 # DevPilot 开发清单
 
-基于 `agentation@3.0.2` 与 `@littleee/devpilot` 的对比分析，结合当前仓库实现，整理出这份更适合排期和拆 issue 的开发清单。
+基于 `agentation@3.0.2` 与 `@didi/devpilot` 的对比分析，结合当前仓库实现，整理出这份更适合排期和拆 issue 的开发清单。
 
 ## 目标
 
